@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/InventoryManagement/" />
+  <Folder Name="/InventoryManagement/src/">
+    <Project Path="InventoryManagement/src/InventorySystem.Client/InventorySystem.Client.csproj" />
+    <Project Path="InventoryManagement/src/InventorySystem.Server/InventorySystem.Server.csproj" />
+    <Project Path="InventoryManagement/src/InventorySystem.Shared/InventorySystem.Shared.csproj" />
+  </Folder>
+</Solution>
