@@ -1,0 +1,152 @@
+@page "/edit/{sku}"
+@inject ProductService ProductService
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Product</PageTitle>
+
+<h1>Edit Product</h1>
+<p role="status">Update the selected product information.</p>
+
+@if (editingProduct == null)
+{
+    <div class="alert alert-danger">
+        Product not found.
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(validationError))
+    {
+        <div class="alert alert-danger" role="alert">
+            @validationError
+        </div>
+    }
+
+    <form class="wrapper">
+
+        <div class="form-group">
+            <label>Name</label>
+            <input @bind="editingProduct.Name"
+                   class="form-control"
+                   type="text" />
+        </div>
+
+        <div class="form-group">
+            <label>SKU Code</label>
+            <input @bind="editingProduct.CodeSKU"
+                   class="form-control"
+                   type="text" />
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea @bind="editingProduct.Description"
+                      class="form-control">
+            </textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Category</label>
+            <select @bind="editingProduct.Category"
+                    class="form-control">
+
+                <option value="">Select category...</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Home">Home</option>
+                <option value="Books">Books</option>
+
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Price</label>
+            <input @bind="editingProduct.Price"
+                   class="form-control"
+                   type="number"
+                   step="0.01" />
+        </div>
+
+        <div class="form-group">
+            <label>Quantity</label>
+            <input @bind="editingProduct.Quantity"
+                   class="form-control"
+                   type="number" />
+        </div>
+
+        <div class="form-group">
+            <label>Minimum Stock Level</label>
+            <input @bind="editingProduct.MinimumStockLevel"
+                   class="form-control"
+                   type="number" />
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input @bind="editingProduct.IsActive"
+                       class="form-check-input"
+                       type="checkbox" />
+                Is Active?
+            </label>
+        </div>
+
+        <button type="button"
+                class="btn btn-success"
+                @onclick="SaveProduct">
+            Save Changes
+        </button>
+
+    </form>
+}
+
+@code {
+
+    [Parameter]
+    public string? sku { get; set; }
+
+    private Product? editingProduct;
+    private string validationError = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        editingProduct =
+            ProductService.Products
+            .FirstOrDefault(p => p.CodeSKU == sku);
+    }
+
+    private void SaveProduct()
+    {
+        validationError = "";
+
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(editingProduct?.Name))
+            errors.Add("Name is required.");
+
+        if (string.IsNullOrWhiteSpace(editingProduct?.CodeSKU))
+            errors.Add("SKU is required.");
+
+        if (string.IsNullOrWhiteSpace(editingProduct?.Description))
+            errors.Add("Description is required.");
+
+        if (string.IsNullOrWhiteSpace(editingProduct?.Category))
+            errors.Add("Category is required.");
+
+        if (editingProduct?.Price <= 0)
+            errors.Add("Price must be greater than 0.");
+
+        if (editingProduct?.Quantity < 0)
+            errors.Add("Quantity cannot be negative.");
+
+        if (editingProduct?.MinimumStockLevel < 0)
+            errors.Add("Minimum stock level cannot be negative.");
+
+        if (errors.Count > 0)
+        {
+            validationError = string.Join(" ", errors);
+            return;
+        }
+
+        Navigation.NavigateTo("/read");
+    }
+}
