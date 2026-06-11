@@ -61,18 +61,36 @@ jobs:
             const issues = result.repository.pullRequest.closingIssuesReferences.nodes;
             
             if (issues.length === 0) {
-              console.log("No linked issues found for this PR.");
+              console.log("DEBUG: No linked issues found for this PR. Did you put 'Closes #123' in the PR description?");
               return;
             }
+
+            console.log(`DEBUG: Found ${issues.length} linked issue(s).`);
 
             // 2. Loop through linked issues and update their status to "Review"
             for (const issue of issues) {
               for (const item of issue.projectItems.nodes) {
-                // Find the Status field and the "Review" option
+                
+                // Find the Status field and the "In review" option
                 const statusField = item.project.fields.nodes.find(f => f.name === 'Status');
+                
+                if (!statusField) {
+                  const availableFields = item.project.fields.nodes.map(f => f.name).join(', ');
+                  console.log(`DEBUG: Could not find a field named 'Status'. Available fields are: ${availableFields}`);
+                  continue; 
+                }
+
                 const reviewOption = statusField?.options?.find(o => o.name === 'In review');
 
+                if (!reviewOption) {
+                  const availableOptions = statusField.options.map(o => o.name).join(', ');
+                  console.log(`DEBUG: Could not find an option named 'In review'. Available options are: ${availableOptions}`);
+                  continue;
+                }
+
+                // If both are found, execute the move!
                 if (statusField && reviewOption) {
+                  console.log(`DEBUG: Found Status field and 'In review' option. Attempting to move...`);
                   const updateMutation = `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
                     updateProjectV2ItemFieldValue(input: {
                       projectId: $projectId
@@ -91,7 +109,7 @@ jobs:
                       fieldId: statusField.id,
                       optionId: reviewOption.id
                     });
-                    console.log(`Successfully moved issue item ${item.id} to Review column.`);
+                    console.log(`Successfully moved issue item ${item.id} to In review column.`);
                   } catch (error) {
                     console.error(`Failed to move issue ${item.id}:`, error);
                   }
