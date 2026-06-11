@@ -70,7 +70,7 @@ jobs:
               for (const item of issue.projectItems.nodes) {
                 // Find the Status field and the "Review" option
                 const statusField = item.project.fields.nodes.find(f => f.name === 'Status');
-                const reviewOption = statusField?.options?.find(o => o.name === 'Review');
+                const reviewOption = statusField?.options?.find(o => o.name === 'In Review');
 
                 if (statusField && reviewOption) {
                   const updateMutation = `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
