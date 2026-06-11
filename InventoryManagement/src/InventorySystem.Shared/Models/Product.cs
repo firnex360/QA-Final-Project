@@ -1,4 +1,4 @@
-namespace InventorySystem.Shared;
+namespace InventorySystem.Shared.Models;
     public class Product
     {
         public int Id { get; set;}
