@@ -1,70 +1,80 @@
 ﻿@page "/create"
-@inject HttpClient Http
 @inject ProductService ProductService
+@inject NavigationManager Navigation
 
 <PageTitle>Create</PageTitle>
 
-<h1>Create a Product!</h1>
-<p role="status">Create a new product by filling out the form below.</p>
+<AuthorizeView>
+    <Authorized>
+        <h1>Create a Product!</h1>
+        <p role="status">Create a new product by filling out the form below.</p>
 
-<div>
-    @if (!string.IsNullOrEmpty(validationError))
-    {
-        <div class="alert alert-danger" role="alert">@validationError</div>
-    }
-    <form class="wrapper">
-        <div class="form-group">
-            <label>Name</label>
-            <input @bind="newProduct.Name" class="form-control" type="text" required="" autofocus="" placeholder="Enter product name..." />
+        <div>
+            @if (!string.IsNullOrEmpty(validationError))
+            {
+                <div class="alert alert-danger" role="alert">@validationError</div>
+            }
+            <form class="wrapper">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input @bind="newProduct.Name" class="form-control" type="text" required="" autofocus="" placeholder="Enter product name..." />
+                </div>
+
+                <div class="form-group">
+                    <label>SKU Code</label>
+                    <input @bind="newProduct.CodeSKU" class="form-control" type="text" required="" placeholder="Enter SKU..." />
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea @bind="newProduct.Description" class="form-control" type="text" required="" placeholder="Enter description..." />
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select @bind="newProduct.Category" class="form-control" required="">
+                        <option value="">Select category...</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Home">Home</option>
+                        <option value="Books">Books</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Price</label>
+                    <input @bind="newProduct.Price" class="form-control" type="number" step="0.01" required="" placeholder="Enter price..." />
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input @bind="newProduct.Quantity" class="form-control" type="number" min="0" required="" placeholder="Enter quantity..." />
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Stock Level</label>
+                    <input @bind="newProduct.MinimumStockLevel" class="form-control" type="number" min="0" required="" placeholder="Enter minimum stock level..." />
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input @bind="newProduct.IsActive" class="form-check-input" type="checkbox" />
+                        Is Active?
+                    </label>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" @onclick="CreateProduct">Create Product!</button>
+
+            </form>
         </div>
-
-        <div class="form-group">
-            <label>SKU Code</label>
-            <input @bind="newProduct.CodeSKU" class="form-control" type="text" required="" placeholder="Enter SKU..." />
+    </Authorized>
+    <NotAuthorized>
+        <div class="alert alert-warning" role="alert">
+            <h4>Access Denied</h4>
+            <p>You must be logged in to create products. <a href="/login">Click here to login!</a></p>
         </div>
-
-        <div class="form-group">
-            <label>Description</label>
-            <textarea @bind="newProduct.Description" class="form-control" type="text" required="" placeholder="Enter description..." />
-        </div>
-
-        <div class="form-group">
-            <label>Category</label>
-            <select @bind="newProduct.Category" class="form-control" required="">
-                <option value="">Select category...</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Home">Home</option>
-                <option value="Books">Books</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Price</label>
-            <input @bind="newProduct.Price" class="form-control" type="number" step="0.01" required="" placeholder="Enter price..." />
-        </div>
-
-        <div class="form-group">
-            <label>Quantity</label>
-            <input @bind="newProduct.Quantity" class="form-control" type="number" min="0" required="" placeholder="Enter quantity..." />
-        </div>
-
-        <div class="form-group">
-            <label>Minimum Stock Level</label>
-            <input @bind="newProduct.MinimumStockLevel" class="form-control" type="number" min="0" required="" placeholder="Enter minimum stock level..." />
-        </div>
-
-        <div class="form-group">
-            <label>
-                <input @bind="newProduct.IsActive" class="form-check-input" type="checkbox" />
-                Is Active?
-            </label>
-        </div>
-
-        <button type="button" class="btn btn-primary btn-block" @onclick="CreateProduct">Create Product!</button>
-        
-    </form>
-</div>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
 
@@ -93,14 +103,14 @@
 
         if (newProduct.Quantity < 0)
             errors.Add("Quantity cannot be negative.");
-            
+
         if (newProduct.MinimumStockLevel < 0)
             errors.Add("Minimum stock level cannot be negative.");
 
         if (errors.Count > 0)
         {
             validationError = string.Join(" ", errors);
-            return; 
+            return;
         }
 
         ProductService.Products.Add(new Product

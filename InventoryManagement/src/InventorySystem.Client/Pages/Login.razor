@@ -1,0 +1,28 @@
+@page "/login"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <p>You are already logged in. Redirecting to home...</p>
+    </Authorized>
+    <NotAuthorized>
+        <RemoteAuthenticatorView Action="@Action" OnLogInSucceeded="OnLoginSuccess" />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    public string? Action { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Action = RemoteAuthenticationActions.LogIn;
+    }
+
+    private void OnLoginSuccess()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

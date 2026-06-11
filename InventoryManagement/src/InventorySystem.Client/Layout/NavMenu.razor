@@ -1,6 +1,17 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">InventorySystem.Client</a>
+        <div class="ms-auto d-flex align-items-center">
+            <AuthorizeView>
+                <Authorized>
+                    <span class="text-light me-3">Welcome, @context.User.Identity?.Name!</span>
+                    <a href="authentication/logout" class="btn btn-sm btn-outline-light">Logout</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="authentication/login" class="btn btn-sm btn-outline-light">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
