@@ -1,6 +1,5 @@
 @page "/read"
 @inject HttpClient Http
-@inject ProductService ProductService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
@@ -15,7 +14,7 @@
 </NavLink>
 
 
-@if (ProductService.Products == null)
+@if (true) // TODO: Update to check if products are null once API is ready
 {
     <p><em>Loading...</em></p>
 }
@@ -36,7 +35,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in ProductService.Products)
+            @foreach (var product in Array.Empty<Product>()) // TODO: use products from API
             {
                 <tr>
                     <td>@product.Name</td>
@@ -58,24 +57,18 @@ else
 }
 
 @code {
-    //private ProductService products;
-
 
     protected override async Task OnInitializedAsync()
     {
 
         try
         {
-        var loaded = await Http.GetFromJsonAsync<List<Product>>("sample-data/product.json");
-        if (loaded == null || loaded.Count == 0) return;
-                var existingSkus = new HashSet<string>(ProductService.Products.Select(p => p.CodeSKU));
-            ProductService.Products.AddRange(loaded.Where(p => !existingSkus.Contains(p.CodeSKU)));
+            // TODO: Load products from API
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading products: {ex.Message}");
         }
-        //ProductService.Products = await Http.GetFromJsonAsync<Product[]>("sample-data/product.json");
     }
 
     private void EditProduct(Product product)
@@ -90,6 +83,6 @@ else
             return;
         }
 
-        ProductService.Products?.Remove(product);
+        // TODO: Call API to remove product
     }
 }
