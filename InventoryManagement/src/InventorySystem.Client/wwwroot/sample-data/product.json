@@ -1,0 +1,53 @@
+﻿[
+
+  {
+    "name": "Product 1",
+    "codeSKU": "P-001",
+    "description": "Description for Product 1",
+    "category": "Category A",
+    "price": 19.99,
+    "quantity": 10,
+    "minimumStockLevel": 5,
+    "isActive": true
+  },
+  {
+    "name": "Product 2",
+    "codeSKU": "P-002",
+    "description": "Description for Product 2",
+    "category": "Category B",
+    "price": 29.99,
+    "quantity": 20,
+    "minimumStockLevel": 10,
+    "isActive": true
+  },
+  {
+    "name": "Product 3",
+    "codeSKU": "P-003",
+    "description": "Description for Product 3",
+    "category": "Category A",
+    "price": 9.99,
+    "quantity": 5,
+    "minimumStockLevel": 2,
+    "isActive": false
+  },
+  {
+    "name": "Product 4",
+    "codeSKU": "P-004",
+    "description": "Description for Product 4",
+    "category": "Category C",
+    "price": 49.99,
+    "quantity": 15,
+    "minimumStockLevel": 7,
+    "isActive": true
+  },
+  {
+    "name": "Product 5",
+    "codeSKU": "P-005",
+    "description": "Description for Product 5",
+    "category": "Category B",
+    "price": 39.99,
+    "quantity": 8,
+    "minimumStockLevel": 4,
+    "isActive": false
+  }
+]

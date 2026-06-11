@@ -1,0 +1,88 @@
+@page "/read"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Read</PageTitle>
+
+<h1>Read Products</h1>
+
+<p role="status">Read the information from the current thinga-ma-gig</p>
+
+<NavLink class="nav-link" href="create">
+    <button class="btn btn-primary">Create Product</button>
+</NavLink>
+
+
+@if (true) // TODO: Update to check if products are null once API is ready
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Code SKU</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Min. Stock</th>
+                <th>[A]</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in Array.Empty<Product>()) // TODO: use products from API
+            {
+                <tr>
+                    <td>@product.Name</td>
+                    <td>@product.CodeSKU</td>
+                    <td>@product.Description</td>
+                    <td>@product.Category</td>
+                    <td>@product.Price</td>
+                    <td>@product.Quantity</td>
+                    <td>@product.MinimumStockLevel</td>
+                    <td>@product.IsActive</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            // TODO: Load products from API
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading products: {ex.Message}");
+        }
+    }
+
+    private void EditProduct(Product product)
+    {
+        NavigationManager.NavigateTo($"/edit/{product.CodeSKU}");
+    }
+    private async Task DeleteProduct(Product product)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'??? This cannot be undone, pal.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        // TODO: Call API to remove product
+    }
+}
