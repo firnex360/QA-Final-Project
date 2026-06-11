@@ -1,14 +1,17 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">InventorySystem.Client</a>
         <div class="ms-auto d-flex align-items-center">
             <AuthorizeView>
                 <Authorized>
                     <span class="text-light me-3">Welcome, @context.User.Identity?.Name!</span>
-                    <a href="authentication/logout" class="btn btn-sm btn-outline-light">Logout</a>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="BeginLogout">Logout</button>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="authentication/login" class="btn btn-sm btn-outline-light">Login</a>
+                    <a href="/authentication/login" class="btn btn-sm btn-outline-light">Login</a>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
@@ -51,5 +54,10 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void BeginLogout()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
     }
 }

@@ -13,14 +13,22 @@ builder.Services.AddOidcAuthentication(options =>
     options.ProviderOptions.Authority = "http://localhost:8080/realms/InventoryWebApiRealm";
     options.ProviderOptions.ClientId = "inventory-client";
     options.ProviderOptions.ResponseType = "code";
-    // Let the provider discover metadata from the Authority and use the app base address
-    options.ProviderOptions.RedirectUri = $"{builder.HostEnvironment.BaseAddress}authentication/login-callback";
-    options.ProviderOptions.PostLogoutRedirectUri = $"{builder.HostEnvironment.BaseAddress}authentication/logout-callback";
+
+    options.ProviderOptions.DefaultScopes.Clear();
     options.ProviderOptions.DefaultScopes.Add("openid");
     options.ProviderOptions.DefaultScopes.Add("profile");
     options.ProviderOptions.DefaultScopes.Add("email");
+
+    options.ProviderOptions.RedirectUri = $"{builder.HostEnvironment.BaseAddress}authentication/login-callback";
+    options.ProviderOptions.PostLogoutRedirectUri = $"{builder.HostEnvironment.BaseAddress}authentication/logout-callback";
+
+    options.AuthenticationPaths.LogInPath = "authentication/login";
+    options.AuthenticationPaths.LogInCallbackPath = "authentication/login-callback";
+    options.AuthenticationPaths.LogInFailedPath = "authentication/login-failed";
+    options.AuthenticationPaths.LogOutPath = "authentication/logout";
+    options.AuthenticationPaths.LogOutCallbackPath = "authentication/logout-callback";
+    options.AuthenticationPaths.LogOutFailedPath = "authentication/logout-failed";
     options.AuthenticationPaths.LogOutSucceededPath = "/";
-    options.AuthenticationPaths.LogOutFailedPath = "/";
 });
 
 builder.Services.AddSingleton<ProductService>();

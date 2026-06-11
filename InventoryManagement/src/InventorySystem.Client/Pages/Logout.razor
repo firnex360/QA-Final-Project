@@ -1,34 +1,14 @@
- @page "/logou" 
-
-<!--@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@page "/logout"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject NavigationManager Navigation
 
 <PageTitle>Logout</PageTitle>
-<RemoteAuthenticatorView    Action="@Action"    OnLogOutSucceeded="LogoutSucceeded"    OnLogOutFailed="LogoutFailed" />
 
--->
-
+<p>Signing out...</p>
 
 @code {
-/*    public string? Action { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        Action = RemoteAuthenticationActions.LogOut;
+        Navigation.NavigateToLogout("authentication/logout");
     }
-
-    private void OnLogoutSuccess()
-    {
-        Navigation.NavigateTo("/");
-    }
-
-    private void LogoutSucceeded()
-    {
-        Console.WriteLine("Logout succeeded");
-    }
-
-    private void LogoutFailed(RemoteAuthenticationResult<RemoteAuthenticationState> result)
-    {
-        Console.WriteLine("Logout failed");
-    }
-*/}
+}
