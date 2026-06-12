@@ -7,6 +7,8 @@ public class ProductService(ApplicationDbContext context) : IProductService
 {
     private readonly ApplicationDbContext _context = context;
 
+
+    //for testing
     public async Task<Product> CreateProductAsync()
     {
         var product = new Product
@@ -21,6 +23,14 @@ public class ProductService(ApplicationDbContext context) : IProductService
             IsActive = true
         };
 
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
+
+        return product;
+    }
+
+    public async Task<Product> CreateProductAsync(Product product)
+    {
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
