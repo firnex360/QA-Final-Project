@@ -1,6 +1,6 @@
 ﻿@page "/create"
 @inject HttpClient Http
-@inject ProductService ProductService
+
 
 <PageTitle>Create</PageTitle>
 
@@ -103,17 +103,7 @@
             return; 
         }
 
-        ProductService.Products.Add(new Product
-        {
-            Name = newProduct.Name,
-            CodeSKU = newProduct.CodeSKU,
-            Description = newProduct.Description,
-            Category = newProduct.Category,
-            Price = newProduct.Price,
-            Quantity = newProduct.Quantity,
-            MinimumStockLevel = newProduct.MinimumStockLevel,
-            IsActive = newProduct.IsActive
-        });
+        // TODO: Add API call to save newProduct
 
         newProduct = new Product();
     }
