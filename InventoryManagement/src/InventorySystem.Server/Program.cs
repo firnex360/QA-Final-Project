@@ -1,6 +1,7 @@
 using InventorySystem.Server.Data;
 using InventorySystem.Server.Services;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,9 +36,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
-// app.UseHttpsRedirection(); // Disabled for local dev — re-enable for production
+// app.UseHttpsRedirection(); // Disabled for local dev - re-enable for production
 
 // Enable CORS
 app.UseCors("AllowBlazorClient");
