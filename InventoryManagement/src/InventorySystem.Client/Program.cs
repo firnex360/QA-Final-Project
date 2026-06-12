@@ -9,4 +9,19 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // Point HttpClient at the Server API base address (from launch settings on .Server project)
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5211") });
 
+builder.Services.AddOidcAuthentication(options =>
+{
+    builder.Configuration.Bind("Keycloak", options.ProviderOptions);
+    options.ProviderOptions.ResponseType = "code";
+    options.ProviderOptions.DefaultScopes.Clear();
+    options.ProviderOptions.DefaultScopes.Add("openid");
+    options.ProviderOptions.DefaultScopes.Add("profile");
+});
+
+builder.Services.AddAuthorizationCore();
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+builder.Services.AddSingleton<Product>();
+
 await builder.Build().RunAsync();

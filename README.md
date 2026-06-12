@@ -32,3 +32,23 @@ How to run app locally once clone the project: [here](https://dotnet.microsoft.c
 that's it. posqgres will be running on docker and can be access through the connection made in appsetting.json on "ConnectionStrings" part
 
 note: this is for testing and will be change later
+
+
+# How to create authentication pass (for now until docker compose)
+
+1. run the following: docker run -p 127.0.0.1:8080:8080 -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:26.6.3 start-dev
+
+2. if it doesn't exist already, create a realm named "inventory-realm"
+
+3. create a client called "inventory-client"
+    3.1. Valid redirect URIs: http://localhost:5167/authentication/login-callback
+    3.2. Valid post logout redirect URIs: http://localhost:5167/authentication/logout-callback
+    3.3. Web Origins: http://localhost:5167
+    3.4. Client Authentication: OFF
+    3.5. Standard flow: YES (everything else from auth flow is NO)
+    3.6. Require PKCE: ON - PKCE Method: S256
+    3.7. Front Channel Logout: YES
+
+4. for a page to need authentication, it needs to have the "@attribute [Authorize]" above. 
+
+it also needs to be added to App.razor. otherwise, the information in the page will not load.
