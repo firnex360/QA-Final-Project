@@ -1,4 +1,4 @@
-﻿@page "/create"
+@page "/create"
 @inject HttpClient Http
 
 
@@ -11,6 +11,10 @@
     @if (!string.IsNullOrEmpty(validationError))
     {
         <div class="alert alert-danger" role="alert">@validationError</div>
+    }
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success" role="alert">@successMessage</div>
     }
     <form class="wrapper">
         <div class="form-group">
@@ -61,7 +65,16 @@
             </label>
         </div>
 
-        <button type="button" class="btn btn-primary btn-block" @onclick="CreateProduct">Create Product!</button>
+        <button type="button" class="btn btn-primary btn-block" @onclick="CreateProduct" disabled="@isSubmitting">
+            @if (isSubmitting)
+            {
+                <span>Creating...</span>
+            }
+            else
+            {
+                <span>Create Product!</span>
+            }
+        </button>
         
     </form>
 </div>
@@ -70,11 +83,14 @@
 
     private Product newProduct = new();
     private string validationError = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isSubmitting = false;
 
-    private void CreateProduct()
+    private async Task CreateProduct()
     {
         validationError = string.Empty;
-        var errors = new System.Collections.Generic.List<string>();
+        successMessage = string.Empty;
+        var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(newProduct.Name))
             errors.Add("Name is required.");
@@ -93,7 +109,7 @@
 
         if (newProduct.Quantity < 0)
             errors.Add("Quantity cannot be negative.");
-            
+
         if (newProduct.MinimumStockLevel < 0)
             errors.Add("Minimum stock level cannot be negative.");
 
@@ -103,9 +119,66 @@
             return; 
         }
 
-        // TODO: Add API call to save newProduct
+        isSubmitting = true;
 
-        newProduct = new Product();
+        // this is for quick testing
+        @* Product productToCreate = new Product
+        {
+            Name = "test",
+            CodeSKU = "TEST-001",
+            Description = "probando",
+            Category = "Testing",
+            Price = 10,
+            Quantity = 50,
+            MinimumStockLevel = 2,
+            IsActive = true
+        };
+        
+        newProduct = productToCreate; *@
+
+        try
+        {
+            // Serialize the Product to JSON 
+            var response = await Http.PostAsJsonAsync("api/product", newProduct);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CreateProductResponse>();
+                successMessage = $"{result?.Message} (ID: {result?.ProductId})";
+                newProduct = new Product(); // Reset form
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                validationError = $"Server error: {response.StatusCode} — {errorContent}";
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            validationError = $"Network error: {httpEx.Message}";
+        }
+        catch (NotSupportedException nsEx)
+        {
+            validationError = $"Content type error: {nsEx.Message}";
+        }
+        catch (System.Text.Json.JsonException jsonEx)
+        {
+            validationError = $"JSON error: {jsonEx.Message}";
+        }
+        catch (Exception ex)
+        {
+            validationError = $"Request failed: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
+    private class CreateProductResponse
+    {
+        public string? Message { get; set; }
+        public int ProductId { get; set; }
+        public string? ProductName { get; set; }
+    }
 }
