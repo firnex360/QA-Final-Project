@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using InventorySystem.Client;
-using InventorySystem.Shared.Models;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
+
+// Point HttpClient at the Server API base address (from launch settings on .Server project)
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5211") });
 
 builder.Services.AddOidcAuthentication(options =>
 {
@@ -17,9 +19,5 @@ builder.Services.AddOidcAuthentication(options =>
 });
 
 builder.Services.AddAuthorizationCore();
-
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-
-builder.Services.AddSingleton<Product>();
 
 await builder.Build().RunAsync();

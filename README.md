@@ -52,3 +52,9 @@ note: this is for testing and will be change later
 4. for a page to need authentication, it needs to have the "@attribute [Authorize]" above. 
 
 it also needs to be added to App.razor. otherwise, the information in the page will not load.
+
+# How to run Scalar for api documentation
+1. run server
+2. on the url: http://localhost:5211/scalar
+
+that's it
