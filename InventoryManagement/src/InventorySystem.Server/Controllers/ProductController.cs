@@ -38,11 +38,25 @@ public class ProductController(IProductService productService) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (product is null)
+            return BadRequest("Product body is required.");
+
+        if (string.IsNullOrWhiteSpace(product.Name))
+            return BadRequest("Name is required.");
+        if (string.IsNullOrWhiteSpace(product.CodeSKU))
+            return BadRequest("SKU is required.");
+        if (string.IsNullOrWhiteSpace(product.Description))
+            return BadRequest("Description is required.");
+        if (string.IsNullOrWhiteSpace(product.Category))
+            return BadRequest("Category is required.");
+        if (product.Price <= 0)
+            return BadRequest("Price must be greater than 0.");
+        if (product.Quantity < 0)
+            return BadRequest("Quantity cannot be negative.");
+        if (product.MinimumStockLevel < 0)
+            return BadRequest("Minimum stock level cannot be negative.");
 
         var created = await _productService.CreateProductAsync(product);
-
         return Ok(new
         {
             Message = "Product created successfully!",
