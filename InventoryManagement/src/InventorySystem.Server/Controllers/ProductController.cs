@@ -11,10 +11,20 @@ public class ProductController(IProductService productService) : ControllerBase
     private readonly IProductService _productService = productService;
 
     // POST api/product/create  (hardcoded test product)
-    [HttpPost("create")]
+    [HttpPost("testcreate")]
     public async Task<IActionResult> TestCreate()
     {
-        var product = await _productService.CreateProductAsync();
+        var product = await _productService.CreateProductAsync(new Product
+        {
+            Name = "Test Product",
+            CodeSKU = "TEST-001",
+            Description = "Hardcoded product for endpoint testing",
+            Category = "Testing",
+            Price = 10m,
+            Quantity = 5,
+            MinimumStockLevel = 1,
+            IsActive = true
+        });
 
         return Ok(new
         {
@@ -38,6 +48,62 @@ public class ProductController(IProductService productService) : ControllerBase
             Message = "Product created successfully!",
             ProductId = created.Id,
             ProductName = created.Name
+        });
+    }
+
+    // GET api/product
+    [HttpGet]
+    public async Task<IActionResult> GetAllProducts()
+    {
+        var products = await _productService.GetAllProductsAsync();
+        return Ok(products);
+    }
+
+    // GET api/product/{id}
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetProductById(int id)
+    {
+        var product = await _productService.GetProductByIdAsync(id);
+        return product == null ? NotFound() : Ok(product);
+    }
+
+    // PUT api/product/{id}
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var existingProduct = await _productService.GetProductByIdAsync(id);
+        if (existingProduct == null)
+            return NotFound();
+
+        existingProduct.Name = product.Name;
+        existingProduct.CodeSKU = product.CodeSKU;
+        existingProduct.Description = product.Description;
+        existingProduct.Category = product.Category;
+        existingProduct.Price = product.Price;
+        existingProduct.Quantity = product.Quantity;
+        existingProduct.MinimumStockLevel = product.MinimumStockLevel;
+        existingProduct.IsActive = product.IsActive;
+
+        await _productService.UpdateProductAsync(existingProduct);
+
+        return Ok(existingProduct);
+    }
+
+    // DELETE api/product/{id}
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteProduct(int id)
+    {
+        var product = await _productService.GetProductByIdAsync(id);
+        if (product == null)
+            return NotFound();
+
+        await _productService.DeleteProductByIdAsync(id);
+        return Ok(new 
+        { 
+            Message = "Product deleted successfully with id: " + product.Id
         });
     }
 }
