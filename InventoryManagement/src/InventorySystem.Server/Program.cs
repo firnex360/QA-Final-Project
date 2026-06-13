@@ -65,9 +65,11 @@ Audit.Core.Configuration.Setup()
                     ? JsonSerializer.Serialize(entry.ColumnValues)
                     : null;
 
-            auditEntity.NewValues = entry.Action != "Delete"
-                ? JsonSerializer.Serialize(entry.ColumnValues)
-                : null;
+            auditEntity.NewValues = entry.Action == "Update"
+                ? JsonSerializer.Serialize(entry.Changes?.ToDictionary(c => c.ColumnName, c => c.NewValue))
+                : entry.Action == "Insert"
+                    ? JsonSerializer.Serialize(entry.ColumnValues)
+                    : null;
 
             auditEntity.AffectedColumns = entry.Action == "Update"
                 ? JsonSerializer.Serialize(entry.Changes?.Select(c => c.ColumnName))
