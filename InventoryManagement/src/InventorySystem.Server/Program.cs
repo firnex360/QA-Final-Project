@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Audit.Core;
-using Audit.EntityFramework;
 using InventorySystem.Server.Data;
 using InventorySystem.Server.Models;
 using InventorySystem.Server.Services;
@@ -91,7 +90,10 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-// app.UseHttpsRedirection(); // Disabled for local dev, re-enable for production
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable CORS
 app.UseCors("AllowBlazorClient");
