@@ -52,8 +52,8 @@ Audit.Core.Configuration.Setup()
             auditEntity.Timestamp = DateTime.UtcNow;
 
             // Extract the authenticated user from the Keycloak JWT (if present)
-            var httpContextAccessor = auditEvent.CustomFields.ContainsKey("HttpContextAccessor")
-                ? auditEvent.CustomFields["HttpContextAccessor"] as IHttpContextAccessor
+            var httpContextAccessor = auditEvent.CustomFields.TryGetValue("HttpContextAccessor", out object? value)
+                ? value as IHttpContextAccessor
                 : null;
             auditEntity.UserId = httpContextAccessor?.HttpContext?.User?.Identity?.Name
                 ?? httpContextAccessor?.HttpContext?.User?.FindFirst("preferred_username")?.Value
@@ -91,7 +91,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-// app.UseHttpsRedirection(); // Disabled for local dev — re-enable for production
+// app.UseHttpsRedirection(); // Disabled for local dev, re-enable for production
 
 // Enable CORS
 app.UseCors("AllowBlazorClient");
