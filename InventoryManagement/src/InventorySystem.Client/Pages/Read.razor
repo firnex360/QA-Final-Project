@@ -13,8 +13,12 @@
     <button class="btn btn-primary">Create Product</button>
 </NavLink>
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-2" role="alert">@errorMessage</div>
+}
 
-@if (true) // TODO: Update to check if products are null once API is ready
+@if (products == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -35,7 +39,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in Array.Empty<Product>()) // TODO: use products from API
+            @foreach (var product in products) // TODO: use products from API
             {
                 <tr>
                     <td>@product.Name</td>
@@ -58,31 +62,51 @@ else
 
 @code {
 
+    private List<Product>? products;
+    private string errorMessage = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
 
         try
         {
-            // TODO: Load products from API
+            products = await Http.GetFromJsonAsync<List<Product>>("api/product");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error loading products: {ex.Message}");
+            errorMessage = $"Error loading products: {ex.Message}";
+            products = new List<Product>(); // show empty table instead of infinite spinner
+            Console.Error.WriteLine(ex.Message);
         }
     }
 
     private void EditProduct(Product product)
     {
-        NavigationManager.NavigateTo($"/edit/{product.CodeSKU}");
+        NavigationManager.NavigateTo($"/edit/{product.Id}");
     }
     private async Task DeleteProduct(Product product)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'??? This cannot be undone, pal.");
         if (!confirmed)
-        {
             return;
-        }
 
-        // TODO: Call API to remove product
+        try
+        {
+            var response = await Http.DeleteAsync($"api/product/{product.Id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                products?.Remove(product);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Delete failed: {response.StatusCode} — {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Network error: {ex.Message}";
+        }
     }
 }

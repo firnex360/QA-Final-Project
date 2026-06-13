@@ -1,4 +1,5 @@
-@page "/edit/{sku}"
+@page "/edit/{id:int}"
+@inject HttpClient Http
 @inject NavigationManager Navigation
 
 <PageTitle>Edit Product</PageTitle>
@@ -6,7 +7,11 @@
 <h1>Edit Product</h1>
 <p role="status">Update the selected product information.</p>
 
-@if (editingProduct == null)
+@if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (editingProduct == null)
 {
     <div class="alert alert-danger">
         Product not found.
@@ -20,6 +25,13 @@ else
             @validationError
         </div>
     }
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @successMessage
+        </div>
+    }
+
 
     <form class="wrapper">
 
@@ -91,29 +103,63 @@ else
 
         <button type="button"
                 class="btn btn-success"
-                @onclick="SaveProduct">
-            Save Changes
+                @onclick="SaveProduct"
+                disabled="@isSubmitting">
+            @if (isSubmitting)
+            {
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Save Changes</span>
+            }
         </button>
 
     </form>
 }
 
+
+<style>
+    .wrapper {	
+	max-width: 600px;
+	margin: 0 auto;
+    display:flex;
+    flex-direction: column;
+    gap: 20px;
+}
+</style>
+
 @code {
 
     [Parameter]
-    public string? sku { get; set; }
+    public int Id { get; set; }
 
     private Product? editingProduct;
     private string validationError = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // TODO: Call API to load product
+        try
+        {
+            editingProduct = await Http.GetFromJsonAsync<Product>($"api/product/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading product: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private void SaveProduct()
+    private async Task SaveProduct()
     {
-        validationError = "";
+        validationError = string.Empty;
+        successMessage = string.Empty;
 
         var errors = new List<string>();
 
@@ -144,6 +190,33 @@ else
             return;
         }
 
-        Navigation.NavigateTo("/read");
+        isSubmitting = true;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/product/{editingProduct!.Id}", editingProduct);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/read");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                validationError = $"Server error: {response.StatusCode} — {errorContent}";
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            validationError = $"Network error: {httpEx.Message}";
+        }
+        catch (Exception ex)
+        {
+            validationError = $"Request failed: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 }

@@ -29,6 +29,8 @@ How to run app locally once clone the project: [here](https://dotnet.microsoft.c
 
 1. Run this on terminal: docker run --name inventory -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password -e POSTGRES_DB=InventoryDb -p 5454:5432 -d postgres:18.4
 
+2. if any errors occur that refer directly to postgres, run this inside inventorysystem.server to make sure the database is up to date: dotnet ef database update
+
 that's it. posqgres will be running on docker and can be access through the connection made in appsetting.json on "ConnectionStrings" part
 
 note: this is for testing and will be change later
