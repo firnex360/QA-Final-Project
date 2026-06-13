@@ -1,5 +1,5 @@
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database 
   db:
     image: postgres:18.4
     container_name: inventory-db
@@ -10,10 +10,16 @@ services:
     ports:
       - "5454:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d InventoryDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: on-failure:3
 
-  # ASP.NET Core Web API
+  # ASP.NET Core Web API 
   server:
     build:
       context: .
@@ -25,20 +31,34 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
-    restart: unless-stopped
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/openapi/v1.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: on-failure:3
 
-  # Blazor WASM Client (with nginx) 
+  # Blazor WASM Client (served by nginx) 
   client:
     build:
       context: .
       dockerfile: InventorySystem.Client/Dockerfile
     container_name: inventory-client
     ports:
-      - "3000:80"
+      - "9090:80"
     depends_on:
-      - server
-    restart: unless-stopped
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: on-failure:3
 
 volumes:
   pgdata:
