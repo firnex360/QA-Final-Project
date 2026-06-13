@@ -21,7 +21,8 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# ASP.NET Core listens on port 8090 by default in containers
-EXPOSE 8090
+# ASP.NET Core listens on port 8080 by default in containers
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "InventorySystem.Server.dll"]
