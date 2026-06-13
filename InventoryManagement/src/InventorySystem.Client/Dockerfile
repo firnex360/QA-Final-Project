@@ -1,4 +1,4 @@
-# ── Build Stage ────────────────────────────────────────────────────────
+# Build Stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -15,7 +15,7 @@ RUN dotnet publish InventorySystem.Client/InventorySystem.Client.csproj \
     -o /app/publish \
     --no-restore
 
-# ── Serve Stage ───────────────────────────────────────────────────────
+# Serve Stage 
 # Blazor WASM compiles to static files — serve them with nginx
 FROM nginx:alpine AS runtime
 

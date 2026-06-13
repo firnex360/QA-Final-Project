@@ -1,4 +1,4 @@
-# ── Build Stage ────────────────────────────────────────────────────────
+# Build Stage 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -15,13 +15,13 @@ RUN dotnet publish InventorySystem.Server/InventorySystem.Server.csproj \
     -o /app/publish \
     --no-restore
 
-# ── Runtime Stage ─────────────────────────────────────────────────────
+# Runtime Stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# ASP.NET Core listens on port 8080 by default in containers
-EXPOSE 8080
+# ASP.NET Core listens on port 8090 by default in containers
+EXPOSE 8090
 
 ENTRYPOINT ["dotnet", "InventorySystem.Server.dll"]
