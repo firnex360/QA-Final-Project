@@ -1,0 +1,64 @@
+services:
+  # PostgreSQL Database 
+  db:
+    image: postgres:18.4
+    container_name: inventory-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: InventoryDb
+    ports:
+      - "5454:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d InventoryDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: on-failure:3
+
+  # ASP.NET Core Web API 
+  server:
+    build:
+      context: .
+      dockerfile: InventorySystem.Server/Dockerfile
+    container_name: inventory-server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/openapi/v1.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: on-failure:3
+
+  # Blazor WASM Client (served by nginx) 
+  client:
+    build:
+      context: .
+      dockerfile: InventorySystem.Client/Dockerfile
+    container_name: inventory-client
+    ports:
+      - "9090:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: on-failure:3
+
+volumes:
+  pgdata:
