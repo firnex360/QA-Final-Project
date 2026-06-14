@@ -28,7 +28,6 @@ public class ProductService(ApplicationDbContext context) : IProductService
 
     public async Task UpdateProductAsync(Product product)
     {
-        _context.Products.Update(product);
         await _context.SaveChangesAsync();
     }
 
