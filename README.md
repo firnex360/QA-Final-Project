@@ -16,10 +16,18 @@ Intro to Blazor: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-t
 
 How to run app locally once clone the project: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-tutorial/run) (this is just for Blazor apps)
 
+# How to run porject on Docker Compose!!!
+can boot up the project through doker compose. 
+
+NOTE: keycloak is NOT part of this. only for Server, Client and DB. have to add it later
+
+1. on "/src" docker compose up --build
+2. make sure to update the database again. delete all volume realated and update it (dotnet ef database update)
+
+That's it!1
+
 
 # How to run the actual project (Atleast for now until figured out Doker compose)
-
-
 
 1. Open in VS Code the folder "InventoryManagement". In here, 3 project will load under the folder "src".
 2. Open terminal, enter the folder of "src\\InventoryManagement.Server" and run dotnet watch

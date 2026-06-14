@@ -6,8 +6,9 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Point HttpClient at the Server API base address (from launch settings on .Server project)
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5211") });
+// API base URL: reads from appsettings.json ("ApiBaseUrl"), falls back to same-origin for Docker
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
 builder.Services.AddOidcAuthentication(options =>
 {
