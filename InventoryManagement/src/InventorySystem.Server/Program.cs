@@ -5,6 +5,8 @@ using InventorySystem.Server.Models;
 using InventorySystem.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,35 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "http://localhost:8080/realms/inventory-realm";
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+            NameClaimType = "preferred_username",
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanCreate", policy =>
+        policy.RequireRole( "adminY", "managerY"));
+
+    options.AddPolicy("CanRead", policy =>
+        policy.RequireRole("adminY", "managerY", "staffY"));
+
+    options.AddPolicy("CanUpdate", policy =>
+        policy.RequireRole("adminY", "managerY"));
+
+    options.AddPolicy("CanDelete", policy =>
+        policy.RequireRole("adminY"));
+});
+
 
 // ── Audit.NET Configuration ──────────────────────────────────────────
 // Tell Audit.NET to store audit events in the AuditLogs table
@@ -110,6 +141,9 @@ app.Use(async (context, next) =>
     });
     await next();
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map controller endpoints
 app.MapControllers();

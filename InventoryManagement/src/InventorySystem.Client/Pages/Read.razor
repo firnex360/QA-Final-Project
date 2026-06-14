@@ -1,7 +1,9 @@
 @page "/read"
+@attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Read</PageTitle>
 
@@ -65,8 +67,17 @@ else
     private List<Product>? products;
     private string errorMessage = string.Empty;
 
+    private bool isAdmin;
+    private bool isStaff;
+    private bool isManager;
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        isAdmin = user.IsInRole("adminY");
+        isStaff = user.IsInRole("staffY");
+        isManager = user.IsInRole("managerY");
 
         try
         {
