@@ -29,7 +29,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
     ports:
-      - "8080:8080"
+      - "8090:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -60,5 +60,20 @@ services:
       start_period: 5s
     restart: on-failure:3
 
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.3
+    container_name: keycloak
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+    ports:
+      - "8080:8080"
+    command: ["start-dev"]
+    volumes:
+      - keycloak-volume:/opt/keycloak/data
+    restart: on-failure:3
+
 volumes:
   pgdata:
+  keycloak-volume:
