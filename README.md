@@ -19,10 +19,8 @@ How to run app locally once clone the project: [here](https://dotnet.microsoft.c
 # How to run porject on Docker Compose!!!
 can boot up the project through doker compose. 
 
-NOTE: keycloak is NOT part of this. only for Server, Client and DB. have to add it later
-
 1. on "/src" docker compose up --build
-2. make sure to update the database again. delete all volume realated and update it (dotnet ef database update)
+2. make sure to update the database again. delete all volume related to DB in docker and update it (dotnet ef database update)
 
 That's it!1
 
