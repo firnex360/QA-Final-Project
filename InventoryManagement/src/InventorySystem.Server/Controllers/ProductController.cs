@@ -132,6 +132,7 @@ public class ProductController(IProductService productService) : ControllerBase
             return NotFound();
 
         await _productService.DeleteProductByIdAsync(id);
+        
         return Ok(new 
         { 
             Message = "Product deleted successfully with id: " + product.Id

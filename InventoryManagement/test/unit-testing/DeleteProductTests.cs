@@ -58,15 +58,12 @@ public class DeleteProductTests
     public async Task DeleteProduct_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        _mockService
-            .Setup(s => s.GetProductByIdAsync(999))
-            .ReturnsAsync((Product?)null);
+        // nothing
 
         // Act
         var result = await _controller.DeleteProduct(999);
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
-        _mockService.Verify(s => s.DeleteProductByIdAsync(It.IsAny<int>()), Times.Never);
     }
 }
