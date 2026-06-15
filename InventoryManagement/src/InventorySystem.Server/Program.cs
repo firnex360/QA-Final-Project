@@ -5,6 +5,8 @@ using InventorySystem.Server.Models;
 using InventorySystem.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +32,46 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5167", "https://localhost:7141")
+        policy.WithOrigins("http://localhost:5167", "https://localhost:7141", "http://localhost:9090")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["Keycloak:Authority"];
+        options.MetadataAddress = builder.Configuration["Keycloak:MetadataAddress"]
+            ?? $"{builder.Configuration["Keycloak:Authority"]}/.well-known/openid-configuration";
+        options.RequireHttpsMetadata = false;
+        // Keep JWT claim names as-is (don't remap "roles" to the legacy MS schema URI),
+        // so RoleClaimType = "roles" below actually matches the Keycloak roles claim.
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["Keycloak:Authority"],
+            RoleClaimType = "roles",
+            NameClaimType = "preferred_username",
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanCreate", policy =>
+        policy.RequireRole( "adminY", "managerY"));
+
+    options.AddPolicy("CanRead", policy =>
+        policy.RequireRole("adminY", "managerY", "staffY"));
+
+    options.AddPolicy("CanUpdate", policy =>
+        policy.RequireRole("adminY", "managerY"));
+
+    options.AddPolicy("CanDelete", policy =>
+        policy.RequireRole("adminY"));
+});
+
 
 // ── Audit.NET Configuration ──────────────────────────────────────────
 // Tell Audit.NET to store audit events in the AuditLogs table
@@ -110,6 +147,20 @@ app.Use(async (context, next) =>
     });
     await next();
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// TEMP DIAGNOSTIC: dump every claim the server sees + whether IsInRole works.
+// Remove this once policies are confirmed working.
+app.MapGet("/whoami", (HttpContext ctx) => Results.Json(new
+{
+    IsAuthenticated = ctx.User.Identity?.IsAuthenticated,
+    Name = ctx.User.Identity?.Name,
+    RoleClaimType = (ctx.User.Identity as System.Security.Claims.ClaimsIdentity)?.RoleClaimType,
+    IsInRole_adminY = ctx.User.IsInRole("adminY"),
+    Claims = ctx.User.Claims.Select(c => new { c.Type, c.Value })
+})).RequireAuthorization();
 
 // Map controller endpoints
 app.MapControllers();
