@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5167", "https://localhost:7141")
+        policy.WithOrigins("http://localhost:5167", "https://localhost:7141", "http://localhost:9090")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -41,11 +41,17 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = "http://localhost:8080/realms/inventory-realm";
+        options.Authority = builder.Configuration["Keycloak:Authority"];
+        options.MetadataAddress = builder.Configuration["Keycloak:MetadataAddress"]
+            ?? $"{builder.Configuration["Keycloak:Authority"]}/.well-known/openid-configuration";
         options.RequireHttpsMetadata = false;
+        // Keep JWT claim names as-is (don't remap "roles" to the legacy MS schema URI),
+        // so RoleClaimType = "roles" below actually matches the Keycloak roles claim.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+            ValidIssuer = builder.Configuration["Keycloak:Authority"],
+            RoleClaimType = "roles",
             NameClaimType = "preferred_username",
             ValidateAudience = false
         };
@@ -144,6 +150,17 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// TEMP DIAGNOSTIC: dump every claim the server sees + whether IsInRole works.
+// Remove this once policies are confirmed working.
+app.MapGet("/whoami", (HttpContext ctx) => Results.Json(new
+{
+    IsAuthenticated = ctx.User.Identity?.IsAuthenticated,
+    Name = ctx.User.Identity?.Name,
+    RoleClaimType = (ctx.User.Identity as System.Security.Claims.ClaimsIdentity)?.RoleClaimType,
+    IsInRole_adminY = ctx.User.IsInRole("adminY"),
+    Claims = ctx.User.Claims.Select(c => new { c.Type, c.Value })
+})).RequireAuthorization();
 
 // Map controller endpoints
 app.MapControllers();

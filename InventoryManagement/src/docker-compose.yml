@@ -28,6 +28,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
+      - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
+      - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration
     ports:
       - "8090:8080"
     depends_on:
