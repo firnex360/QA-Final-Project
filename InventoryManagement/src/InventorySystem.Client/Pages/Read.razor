@@ -19,12 +19,7 @@
 {
     <div class="alert alert-danger mt-2" role="alert">@errorMessage</div>
 }
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-2" role="alert">@errorMessage</div>
-}
 
-@if (products == null)
 @if (products == null)
 {
     <p><em>Loading...</em></p>
@@ -46,8 +41,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in products) // TODO: use products from API
-            @foreach (var product in products) // TODO: use products from API
+            @foreach (var product in products)
             {
                 <tr>
                     <td>@product.Name</td>
@@ -95,15 +89,11 @@ else
             errorMessage = $"Error loading products: {ex.Message}";
             products = new List<Product>(); // show empty table instead of infinite spinner
             Console.Error.WriteLine(ex.Message);
-            errorMessage = $"Error loading products: {ex.Message}";
-            products = new List<Product>(); // show empty table instead of infinite spinner
-            Console.Error.WriteLine(ex.Message);
         }
     }
 
     private void EditProduct(Product product)
     {
-        NavigationManager.NavigateTo($"/edit/{product.Id}");
         NavigationManager.NavigateTo($"/edit/{product.Id}");
     }
     private async Task DeleteProduct(Product product)
@@ -111,25 +101,6 @@ else
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'??? This cannot be undone, pal.");
         if (!confirmed)
             return;
-
-        try
-        {
-            var response = await Http.DeleteAsync($"api/product/{product.Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                products?.Remove(product);
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                errorMessage = $"Delete failed: {response.StatusCode} — {errorContent}";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Network error: {ex.Message}";
-        }
 
         try
         {
