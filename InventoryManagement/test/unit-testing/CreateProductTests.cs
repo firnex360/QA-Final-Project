@@ -87,6 +87,35 @@ public class CreateProductTests
     }
 
     [Fact]
+    public async Task CreateProduct_ServiceThrowsException_ReturnsInternalServerError()
+    {
+        // Arrange
+        var newProduct = new Product
+        {
+            Name = "Keyboard",
+            CodeSKU = "KB-100",
+            Description = "Mechanical keyboard",
+            Category = "Peripherals",
+            Price = 79.99m,
+            Quantity = 50,
+            MinimumStockLevel = 5,
+            IsActive = true
+        };
+
+        _mockService
+            .Setup(s => s.CreateProductAsync(It.IsAny<Product>()))
+            .ThrowsAsync(new Exception("Database connection failed"));
+
+        // Act
+        var result = await _controller.CreateProduct(newProduct);
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal("An error occurred while creating the product.", objectResult.Value);
+    }
+
+    [Fact]
     public async Task CreateProduct_Null_ReturnsBadRequest()
     {
         // Arrange

@@ -59,4 +59,21 @@ public class GetAllProductsTests
         var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
         Assert.Empty(returnedProducts);
     }
+
+    [Fact]
+    public async Task GetAllProducts_ServiceThrowsException_ReturnsInternalServerError()
+    {
+        // Arrange
+        _mockService
+            .Setup(s => s.GetAllProductsAsync())
+            .ThrowsAsync(new Exception("Database connection failed"));
+
+        // Act
+        var result = await _controller.GetAllProducts();
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal("An error occurred while retrieving products.", objectResult.Value);
+    }
 }

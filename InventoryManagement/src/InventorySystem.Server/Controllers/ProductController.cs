@@ -58,22 +58,36 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product.MinimumStockLevel < 0)
             return BadRequest("Minimum stock level cannot be negative.");
 
-        var created = await _productService.CreateProductAsync(product);
-
-        return Ok(new
+        try
         {
-            Message = "Product created successfully!",
-            ProductId = created.Id,
-            ProductName = created.Name
-        });
+            var created = await _productService.CreateProductAsync(product);
+
+            return Ok(new
+            {
+                Message = "Product created successfully!",
+                ProductId = created.Id,
+                ProductName = created.Name
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while creating the product.");
+        }
     }
 
     // GET api/product
     [HttpGet]
     public async Task<IActionResult> GetAllProducts()
     {
-        var products = await _productService.GetAllProductsAsync();
-        return Ok(products);
+        try
+        {
+            var products = await _productService.GetAllProductsAsync();
+            return Ok(products);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while retrieving products.");
+        }
     }
 
     // GET api/product/{id}
