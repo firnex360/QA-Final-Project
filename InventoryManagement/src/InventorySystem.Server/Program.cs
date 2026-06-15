@@ -2,6 +2,7 @@ using System.Text.Json;
 using Audit.Core;
 using InventorySystem.Server.Data;
 using InventorySystem.Server.Models;
+using InventorySystem.Server.Repositories;
 using InventorySystem.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -20,6 +21,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register application services
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
 // Register IHttpContextAccessor so Audit.NET can read the current user

@@ -1,44 +1,53 @@
-using InventorySystem.Server.Data;
+using InventorySystem.Server.Repositories;
+using InventorySystem.Shared.DTOs;
 using InventorySystem.Shared.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace InventorySystem.Server.Services;
 
-public class ProductService(ApplicationDbContext context) : IProductService
+public class ProductService(IProductRepository repository) : IProductService
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly IProductRepository _repository = repository;
 
-    public async Task<Product> CreateProductAsync(Product product)
+    public async Task<Product> CreateProductAsync(Product product) =>
+        await _repository.CreateAsync(product);
+
+    public async Task<Product> CreateProductAsync(CreateProductDto dto)
     {
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
+        if (await _repository.ExistsAsync(dto.Name!))
+            throw new InvalidOperationException($"A product named '{dto.Name}' already exists.");
 
-        return product;
-    }
-
-    public async Task<Product?> GetProductByIdAsync(int id)
-    {
-        return await _context.Products.FindAsync(id);
-    }
-
-    public async Task<List<Product>> GetAllProductsAsync()
-    {
-        return await _context.Products.ToListAsync();
-    }
-
-    public async Task UpdateProductAsync(Product product)
-    {
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteProductByIdAsync(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product != null)
+        var product = new Product
         {
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
-        }
+            Name = dto.Name,
+            CodeSKU = dto.CodeSKU,
+            Description = dto.Description,
+            Category = dto.Category,
+            Price = dto.Price,
+            Quantity = dto.Quantity,
+            MinimumStockLevel = dto.MinimumStockLevel,
+            IsActive = dto.IsActive
+        };
+        return await _repository.CreateAsync(product);
     }
-    
+
+    public async Task<Product?> GetProductByIdAsync(int id) =>
+        await _repository.GetByIdAsync(id);
+
+    public async Task<List<Product>> GetAllProductsAsync() =>
+        await _repository.GetAllAsync();
+
+    public async Task<List<Product>> GetLowStockAsync(int threshold)
+    {
+        var all = await _repository.GetAllAsync();
+        return all
+            .Where(p => p.Quantity < threshold)
+            .OrderBy(p => p.Quantity)
+            .ToList();
+    }
+
+    public async Task UpdateProductAsync(Product product) =>
+        await _repository.UpdateAsync(product);
+
+    public async Task DeleteProductByIdAsync(int id) =>
+        await _repository.DeleteAsync(id);
 }
