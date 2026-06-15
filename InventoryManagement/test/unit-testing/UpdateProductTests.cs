@@ -95,4 +95,48 @@ public class UpdateProductTests
         Assert.IsType<NotFoundResult>(result);
         _mockService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
     }
+
+    [Fact]
+    public async Task UpdateProduct_UpdatingId_ReturnsBadRequest()
+    {
+        // Arrange
+        var data = new Product
+        {
+            Id = 5,
+            Name = "Ghost Product",
+            CodeSKU = "GHOST-001",
+            Description = "Does not exist",
+            Category = "N/A",
+            Price = 1m,
+            Quantity = 0,
+            MinimumStockLevel = 0,
+            IsActive = false
+        };
+
+        var updatedData = new Product
+        {
+            Id = 10, 
+            Name = "New Mouse Pro",
+            CodeSKU = "MS-300-PRO",
+            Description = "Updated ergonomic mouse",
+            Category = "Peripherals",
+            Price = 45m,
+            Quantity = 100,
+            MinimumStockLevel = 10,
+            IsActive = true
+        };
+
+        _mockService
+            .Setup(s => s.GetProductByIdAsync(5))
+            .ReturnsAsync(data);
+
+        // Act
+        var result = await _controller.UpdateProduct(5, updatedData);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Can't update value ID.", badRequest.Value);
+        _mockService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
+    }
 }

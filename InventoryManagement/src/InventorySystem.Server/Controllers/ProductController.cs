@@ -91,6 +91,8 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product is null)
             return BadRequest("Product body is required.");
 
+        if (product.Id > 0)
+            return BadRequest("Can't update value ID.");
         if (string.IsNullOrWhiteSpace(product.Name))
             return BadRequest("Name is required.");
         if (string.IsNullOrWhiteSpace(product.CodeSKU))
@@ -105,7 +107,9 @@ public class ProductController(IProductService productService) : ControllerBase
             return BadRequest("Quantity cannot be negative.");
         if (product.MinimumStockLevel < 0)
             return BadRequest("Minimum stock level cannot be negative.");
+
         var existingProduct = await _productService.GetProductByIdAsync(id);
+        
         if (existingProduct == null)
             return NotFound();
 
@@ -132,7 +136,7 @@ public class ProductController(IProductService productService) : ControllerBase
             return NotFound();
 
         await _productService.DeleteProductByIdAsync(id);
-        
+
         return Ok(new 
         { 
             Message = "Product deleted successfully with id: " + product.Id
