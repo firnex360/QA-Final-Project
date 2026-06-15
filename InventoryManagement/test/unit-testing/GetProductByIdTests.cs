@@ -55,9 +55,7 @@ public class GetProductByIdTests
     public async Task GetProductById_NonExistingId_ReturnsNotFound()
     {
         // Arrange
-        _mockService
-            .Setup(s => s.GetProductByIdAsync(999))
-            .ReturnsAsync((Product?)null);
+        // nothing
 
         // Act
         var result = await _controller.GetProductById(999);
