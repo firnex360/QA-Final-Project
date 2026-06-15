@@ -16,10 +16,16 @@ Intro to Blazor: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-t
 
 How to run app locally once clone the project: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-tutorial/run) (this is just for Blazor apps)
 
+# How to run porject on Docker Compose!!!
+can boot up the project through doker compose. 
+
+1. on "/src" docker compose up --build
+2. make sure to update the database again. delete all volume related to DB in docker and update it (dotnet ef database update)
+
+That's it!1
+
 
 # How to run the actual project (Atleast for now until figured out Doker compose)
-
-
 
 1. Open in VS Code the folder "InventoryManagement". In here, 3 project will load under the folder "src".
 2. Open terminal, enter the folder of "src\\InventoryManagement.Server" and run dotnet watch
@@ -28,6 +34,8 @@ How to run app locally once clone the project: [here](https://dotnet.microsoft.c
 # How to run database postgres(for now until docker compose)
 
 1. Run this on terminal: docker run --name inventory -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password -e POSTGRES_DB=InventoryDb -p 5454:5432 -d postgres:18.4
+
+2. if any errors occur that refer directly to postgres, run this inside inventorysystem.server to make sure the database is up to date: dotnet ef database update
 
 2. if any errors occur that refer directly to postgres, run this inside inventorysystem.server to make sure the database is up to date: dotnet ef database update
 
