@@ -60,3 +60,25 @@ it also needs to be added to App.razor. otherwise, the information in the page w
 2. on the url: http://localhost:5211/scalar
 
 that's it
+
+
+# How to create Policies (before I forget how to do it)
+
+
+1. Go to keycloak (http://localhost:8080)
+2. CREATE ROLES -- Go into Clients > inventory-client > Roles. Here, you will create all the roles designated for your project.
+3. CREATE MAPPER -- Go into Clients > inventory-client > Client Scopes > inventory-client-dedicated > Create a new mapper (if no mappers yet) and make sure it has the following settings:
+    SELECT -- Mapper type: User Client Role
+    Client ID: inventory-client
+    Token Claim Name: roles
+    Claim JSON Type: String
+    Add to access token: ON
+    Add to ID token: ON
+    Add to userinfo: ON
+4. CREATE USER -- Go to Users > Add a username & email > Save > Go to credentials > Set Password & turn temporary OFF 
+5. ADD ROLE TO USER -- Go to Users > Select the desired user > Role Mapping > Assign Role *(CLIENT ROLE) > Select desired role & Apply.
+
+Code-wise
+
+1. This first version handles the APIs directly, so each API has the [Authorize(Policy = "CanXXX")] above, which is how we can call that policy later on.
+2. In the client [Product.cs], inside the AddAuthorizationCore we can add the Policy name and the roles that can use those policies. Same goes for server [Product.cs], inside AddAuthorization.
