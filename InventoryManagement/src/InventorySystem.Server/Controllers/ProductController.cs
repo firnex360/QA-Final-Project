@@ -10,30 +10,6 @@ public class ProductController(IProductService productService) : ControllerBase
 {
     private readonly IProductService _productService = productService;
 
-    // POST api/product/create  (hardcoded test product)
-    [HttpPost("testcreate")]
-    public async Task<IActionResult> TestCreate()
-    {
-        var product = await _productService.CreateProductAsync(new Product
-        {
-            Name = "Test Product",
-            CodeSKU = "TEST-001",
-            Description = "Hardcoded product for endpoint testing",
-            Category = "Testing",
-            Price = 10m,
-            Quantity = 5,
-            MinimumStockLevel = 1,
-            IsActive = true
-        });
-
-        return Ok(new
-        {
-            Message = "Product created successfully!",
-            ProductId = product.Id,
-            ProductName = product.Name
-        });
-    }
-
     // POST api/product: accepts a Product JSON body from the client (this is the one to use)
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
@@ -123,7 +99,7 @@ public class ProductController(IProductService productService) : ControllerBase
             return BadRequest("Minimum stock level cannot be negative.");
 
         var existingProduct = await _productService.GetProductByIdAsync(id);
-        
+
         if (existingProduct == null)
             return NotFound();
 
