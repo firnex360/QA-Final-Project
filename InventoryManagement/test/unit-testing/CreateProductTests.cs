@@ -38,7 +38,6 @@ public class CreateProductTests
 
         var createdProduct = new Product
         {
-            Id = 10,
             Name = "Keyboard",
             CodeSKU = "KB-100",
             Description = "Mechanical keyboard",
@@ -84,6 +83,47 @@ public class CreateProductTests
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Name is required.", badRequest.Value);
+        _mockService.Verify(s => s.CreateProductAsync(It.IsAny<Product>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateProduct_Null_ReturnsBadRequest()
+    {
+        // Arrange
+        Product? invalidProduct = null;
+
+        // Act
+        var result = await _controller.CreateProduct(invalidProduct!);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Product body is required.", badRequest.Value);
+        _mockService.Verify(s => s.CreateProductAsync(It.IsAny<Product>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateProduct_IdAssign_ReturnsBadRequest()
+    {
+        // Arrange
+        var createdProduct = new Product
+        {
+            Id = 10,
+            Name = "Keyboard",
+            CodeSKU = "KB-100",
+            Description = "Mechanical keyboard",
+            Category = "Peripherals",
+            Price = 79.99m,
+            Quantity = 50,
+            MinimumStockLevel = 5,
+            IsActive = true
+        };
+
+        // Act
+        var result = await _controller.CreateProduct(createdProduct);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Can't assigned values to ID.", badRequest.Value);
         _mockService.Verify(s => s.CreateProductAsync(It.IsAny<Product>()), Times.Never);
     }
 }

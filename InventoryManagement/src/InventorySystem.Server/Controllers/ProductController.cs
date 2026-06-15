@@ -41,6 +41,8 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product is null)
             return BadRequest("Product body is required.");
 
+        if (product.Id > 0)
+            return BadRequest("Can't assigned values to ID.");
         if (string.IsNullOrWhiteSpace(product.Name))
             return BadRequest("Name is required.");
         if (string.IsNullOrWhiteSpace(product.CodeSKU))
@@ -57,6 +59,7 @@ public class ProductController(IProductService productService) : ControllerBase
             return BadRequest("Minimum stock level cannot be negative.");
 
         var created = await _productService.CreateProductAsync(product);
+
         return Ok(new
         {
             Message = "Product created successfully!",
