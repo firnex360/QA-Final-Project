@@ -1,6 +1,7 @@
 using InventorySystem.Server.Services;
 using InventorySystem.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace InventorySystem.Server.Controllers;
 
@@ -36,6 +37,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // POST api/product: accepts a Product JSON body from the client (this is the one to use)
     [HttpPost]
+    [Authorize(Policy = "CanCreate")]  
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
     {
         if (product is null)
@@ -67,6 +69,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // GET api/product
     [HttpGet]
+    [Authorize(Policy = "CanRead")]
     public async Task<IActionResult> GetAllProducts()
     {
         var products = await _productService.GetAllProductsAsync();
@@ -75,6 +78,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // GET api/product/{id}
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "CanRead")]
     public async Task<IActionResult> GetProductById(int id)
     {
         var product = await _productService.GetProductByIdAsync(id);
@@ -83,6 +87,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // PUT api/product/{id}
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "CanUpdate")]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
     {
         if (product is null)
@@ -122,6 +127,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // DELETE api/product/{id}
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "CanDelete")]
     public async Task<IActionResult> DeleteProduct(int id)
     {
         var product = await _productService.GetProductByIdAsync(id);

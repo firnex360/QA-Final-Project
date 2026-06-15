@@ -1,7 +1,9 @@
 @page "/read"
+@attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Read</PageTitle>
 
@@ -39,7 +41,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in products) // TODO: use products from API
+            @foreach (var product in products)
             {
                 <tr>
                     <td>@product.Name</td>
@@ -65,11 +67,21 @@ else
     private List<Product>? products;
     private string errorMessage = string.Empty;
 
+    private bool isAdmin;
+    private bool isStaff;
+    private bool isManager;
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        isAdmin = user.IsInRole("adminY");
+        isStaff = user.IsInRole("staffY");
+        isManager = user.IsInRole("managerY");
 
         try
         {
+            products = await Http.GetFromJsonAsync<List<Product>>("api/product");
             products = await Http.GetFromJsonAsync<List<Product>>("api/product");
         }
         catch (Exception ex)
