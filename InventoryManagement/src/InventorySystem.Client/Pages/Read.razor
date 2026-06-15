@@ -41,7 +41,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in products)
+            @foreach (var product in PagedProducts)
             {
                 <tr>
                     <td>@product.Name</td>
@@ -60,12 +60,26 @@ else
             }
         </tbody>
     </table>
+
+    <nav class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">Previous</button>
+        <span>Page @currentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next</button>
+    </nav>
 }
 
 @code {
 
     private List<Product>? products;
     private string errorMessage = string.Empty;
+
+    private const int pageSize = 5;
+    private int currentPage = 1;
+    private int TotalPages => products is null || products.Count == 0 ? 1 : (int)Math.Ceiling(products.Count / (double)pageSize);
+    private IEnumerable<Product> PagedProducts =>
+        products is null ? Enumerable.Empty<Product>() : products.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
 
     private bool isAdmin;
     private bool isStaff;
@@ -81,7 +95,6 @@ else
 
         try
         {
-            products = await Http.GetFromJsonAsync<List<Product>>("api/product");
             products = await Http.GetFromJsonAsync<List<Product>>("api/product");
         }
         catch (Exception ex)
@@ -109,6 +122,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 products?.Remove(product);
+                if (currentPage > TotalPages) currentPage = TotalPages;
             }
             else
             {

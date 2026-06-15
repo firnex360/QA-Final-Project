@@ -9,6 +9,7 @@
                     {
                         var action = routeData.PageType.Name switch
                         {
+                            nameof(Pages.Audit) => "view the audit logs",
                             nameof(Pages.Create) => "create products",
                             nameof(Pages.Edit) => "edit products",
                             _ => "access this page"

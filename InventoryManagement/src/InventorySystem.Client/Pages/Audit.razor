@@ -1,0 +1,65 @@
+@page "/audit"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Audit Log</PageTitle>
+
+<h1>Audit Logs</h1>
+
+<p>Welcome! Here, you'll be able to review the logs of recent updates made by our users.</p>
+
+@if (logs is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (logs.Count == 0)
+{
+    <p>No audit records yet! :)</p>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+            <tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Id</th><th>New Values</th><th>Old Values</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var log in PagedLogs)
+            {
+                <tr>
+                    <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@log.UserId</td>
+                    <td>@log.Action</td>
+                    <td>@log.EntityName</td>
+                    <td>@log.EntityId</td>
+                    <td>@log.NewValues</td>
+                    <td>@log.OldValues</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">Previous</button>
+        <span>Page @currentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next</button>
+    </nav>
+}
+
+@code {
+    private List<AuditLogDto>? logs;
+    private const int pageSize = 5;
+    private int currentPage = 1;
+    private int TotalPages => logs is null || logs.Count == 0 ? 1 : (int)Math.Ceiling(logs.Count / (double)pageSize);
+    private IEnumerable<AuditLogDto> PagedLogs =>
+        logs is null ? Enumerable.Empty<AuditLogDto>() : logs.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit"); }
+        catch (Exception ex) { logs = new(); Console.Error.WriteLine(ex.Message); }
+    }
+
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+}

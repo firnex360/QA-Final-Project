@@ -151,17 +151,6 @@ app.Use(async (context, next) =>
 app.UseAuthentication();
 app.UseAuthorization();
 
-// TEMP DIAGNOSTIC: dump every claim the server sees + whether IsInRole works.
-// Remove this once policies are confirmed working.
-app.MapGet("/whoami", (HttpContext ctx) => Results.Json(new
-{
-    IsAuthenticated = ctx.User.Identity?.IsAuthenticated,
-    Name = ctx.User.Identity?.Name,
-    RoleClaimType = (ctx.User.Identity as System.Security.Claims.ClaimsIdentity)?.RoleClaimType,
-    IsInRole_adminY = ctx.User.IsInRole("adminY"),
-    Claims = ctx.User.Claims.Select(c => new { c.Type, c.Value })
-})).RequireAuthorization();
-
 // Map controller endpoints
 app.MapControllers();
 
