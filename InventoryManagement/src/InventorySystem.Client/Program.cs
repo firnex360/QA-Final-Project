@@ -10,7 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // API base URL: reads from appsettings.json ("ApiBaseUrl"), falls back to same-origin for Docker
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
 builder.Services.AddOidcAuthentication(options =>
 {
@@ -41,10 +40,11 @@ builder.Services.AddScoped<ApiAuthorizationMessageHandler>();
 builder.Services.AddScoped(sp =>
 {
     var handler = sp.GetRequiredService<ApiAuthorizationMessageHandler>();
+    handler.ConfigureHandler(authorizedUrls: [apiBaseUrl]);
     handler.InnerHandler = new HttpClientHandler();
     return new HttpClient(handler)
     {
-        BaseAddress = new Uri("http://localhost:5211")
+        BaseAddress = new Uri(apiBaseUrl)
     };
 });
 
@@ -57,7 +57,6 @@ namespace InventorySystem.Client
         public ApiAuthorizationMessageHandler(IAccessTokenProvider provider, NavigationManager navigation)
             : base(provider, navigation)
         {
-            ConfigureHandler(authorizedUrls: ["http://localhost:5211"]);
         }
     }
 }
