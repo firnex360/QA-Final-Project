@@ -136,7 +136,7 @@ public class UpdateProductTests
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Can't update value ID.", badRequest.Value);
+        Assert.Equal("Body ID does not match the URL ID.", badRequest.Value);
         _mockService.Verify(s => s.UpdateProductAsync(It.IsAny<Product>()), Times.Never);
     }
 }
