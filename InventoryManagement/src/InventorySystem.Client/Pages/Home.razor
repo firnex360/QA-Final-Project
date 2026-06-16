@@ -1,7 +1,76 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+@inject HttpClient Http
 
-<h1>Hello, world!!! How is everyone doing?</h1>
+<PageTitle>Dashboard</PageTitle>
 
-Welcome to your new app.
+<div class="page-header">
+    <div>
+        <h1 class="mb-1">Dashboard</h1>
+        <p class="text-muted mb-0">Inventory overview at a glance.</p>
+    </div>
+</div>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+else if (stats is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-label">Total Products</div>
+            <div class="kpi-value">@stats.TotalProducts</div>
+        </div>
+        <div class="kpi-card kpi-green">
+            <div class="kpi-label">Active</div>
+            <div class="kpi-value">@stats.ActiveProducts</div>
+        </div>
+        <div class="kpi-card @(stats.LowStockCount > 0 ? "kpi-red" : "kpi-amber")">
+            <div class="kpi-label">Low Stock</div>
+            <div class="kpi-value">@stats.LowStockCount</div>
+        </div>
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-label">Inventory Value</div>
+            <div class="kpi-value">@stats.TotalInventoryValue.ToString("C0")</div>
+        </div>
+    </div>
+
+    @if (stats.ByCategory.Count > 0)
+    {
+        <div class="chart-grid">
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Products by Category" Height="260">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stats.ByCategory"
+                                     Name="Products"
+                                     SeriesType="SeriesType.Donut"
+                                     XValue="@(e => e.Label)"
+                                     YAggregate="@(e => e.Sum(i => (decimal)i.Count))" />
+                </ApexChart>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private ProductStatsDto? stats;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            stats = await Http.GetFromJsonAsync<ProductStatsDto>("api/product/stats");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading dashboard: {ex.Message}";
+            Console.Error.WriteLine(ex.Message);
+        }
+    }
+}

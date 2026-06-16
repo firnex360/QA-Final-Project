@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using InventorySystem.Client;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using ApexCharts;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -33,6 +34,8 @@ builder.Services.AddAuthorizationCore(options =>
     options.AddPolicy("CanDelete", policy =>
         policy.RequireRole("adminY"));
 });
+
+builder.Services.AddApexCharts();
 
 builder.Services.AddScoped<ApiAuthorizationMessageHandler>();
 

@@ -26,6 +26,24 @@ public class ProductService(ApplicationDbContext context) : IProductService
         return await _context.Products.ToListAsync();
     }
 
+    public async Task<ProductStatsDto> GetProductStatsAsync()
+    {
+        var products = await _context.Products.ToListAsync();
+        return new ProductStatsDto
+        {
+            TotalProducts = products.Count,
+            ActiveProducts = products.Count(p => p.IsActive),
+            InactiveProducts = products.Count(p => !p.IsActive),
+            LowStockCount = products.Count(p => p.Quantity <= p.MinimumStockLevel),
+            TotalInventoryValue = products.Sum(p => p.Price * p.Quantity),
+            ByCategory = products
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "Uncategorized" : p.Category!)
+                .Select(g => new LabelCountDto { Label = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ToList()
+        };
+    }
+
     public async Task UpdateProductAsync(Product product)
     {
         await _context.SaveChangesAsync();

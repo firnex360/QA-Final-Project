@@ -12,6 +12,66 @@
     </div>
 </div>
 
+@if (stats is not null)
+{
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-label">Total Events</div>
+            <div class="kpi-value">@stats.TotalEvents</div>
+        </div>
+        <div class="kpi-card kpi-green">
+            <div class="kpi-label">Today</div>
+            <div class="kpi-value">@stats.EventsToday</div>
+        </div>
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-label">Last 7 Days</div>
+            <div class="kpi-value">@stats.EventsThisWeek</div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        @if (stats.ByAction.Count > 0)
+        {
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Events by Action" Height="240">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stats.ByAction"
+                                     Name="Events"
+                                     SeriesType="SeriesType.Donut"
+                                     XValue="@(e => e.Label)"
+                                     YAggregate="@(e => e.Sum(i => (decimal)i.Count))" />
+                </ApexChart>
+            </div>
+        }
+        @if (stats.ByDay.Count > 0)
+        {
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Activity (last 7 days)" Height="240">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stats.ByDay"
+                                     Name="Events"
+                                     SeriesType="SeriesType.Line"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => (decimal)e.Count)" />
+                </ApexChart>
+            </div>
+        }
+        @if (stats.ByUser.Count > 0)
+        {
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Top Users" Height="240">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stats.ByUser"
+                                     Name="Events"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => (decimal)e.Count)" />
+                </ApexChart>
+            </div>
+        }
+    </div>
+}
+
 @if (logs is null)
 {
     <p><em>Loading...</em></p>
@@ -63,6 +123,7 @@ else
 
 @code {
     private List<AuditLogDto>? logs;
+    private AuditStatsDto? stats;
     private const int pageSize = 5;
     private int currentPage = 1;
     private int TotalPages => logs is null || logs.Count == 0 ? 1 : (int)Math.Ceiling(logs.Count / (double)pageSize);
@@ -71,8 +132,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try { logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit"); }
-        catch (Exception ex) { logs = new(); Console.Error.WriteLine(ex.Message); }
+        try
+        {
+            logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit");
+            stats = await Http.GetFromJsonAsync<AuditStatsDto>("api/audit/stats");
+        }
+        catch (Exception ex) { logs ??= new(); Console.Error.WriteLine(ex.Message); }
     }
 
     private void PrevPage() { if (currentPage > 1) currentPage--; }
