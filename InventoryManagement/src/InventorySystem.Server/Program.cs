@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +74,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 
+// Custom Prometheus counter: one increment per audited entity change,
+// labelled by action and entity so Grafana can chart business activity.
+var auditEventsCounter = Metrics.CreateCounter(
+    "inventory_audit_events_total",
+    "Total number of audited entity changes.",
+    new CounterConfiguration { LabelNames = ["action", "entity"] });
+
 // ── Audit.NET Configuration ──────────────────────────────────────────
 // Tell Audit.NET to store audit events in the AuditLogs table
 // via the same ApplicationDbContext. Every SaveChanges/SaveChangesAsync
@@ -86,6 +94,9 @@ Audit.Core.Configuration.Setup()
             auditEntity.EntityId = entry.PrimaryKey.First().Value?.ToString() ?? "";
             auditEntity.Action = entry.Action;
             auditEntity.Timestamp = DateTime.UtcNow;
+
+            // Feed the Prometheus counter (Grafana reads this).
+            auditEventsCounter.WithLabels(entry.Action, entry.EntityType.Name).Inc();
 
             // Extract the authenticated user from the Keycloak JWT (if present)
             var httpContextAccessor = auditEvent.CustomFields.TryGetValue("HttpContextAccessor", out object? value)
@@ -137,6 +148,9 @@ if (app.Environment.IsProduction())
 // Enable CORS
 app.UseCors("AllowBlazorClient");
 
+// Record HTTP request metrics (rate, duration, status) for Prometheus
+app.UseHttpMetrics();
+
 // Middleware to inject IHttpContextAccessor into Audit.NET's custom fields
 app.Use(async (context, next) =>
 {
@@ -153,5 +167,8 @@ app.UseAuthorization();
 
 // Map controller endpoints
 app.MapControllers();
+
+// Expose Prometheus metrics at /metrics for scraping
+app.MapMetrics();
 
 app.Run();

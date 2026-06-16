@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Scrapes the ASP.NET Core API's /metrics endpoint.
+  # When the API runs in Docker this target ('server:8080') resolves via the
+  # compose network. If you run the API locally with `dotnet run` instead,
+  # change the target to 'host.docker.internal:5211'.
+  - job_name: 'inventory-api'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['server:8080']

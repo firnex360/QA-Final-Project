@@ -195,3 +195,73 @@ code {
     min-width: 7rem;
     text-align: center;
 }
+
+/* ── KPI cards ─────────────────────────────────────────────────── */
+/* Auto-fit: cards sit side by side and only wrap when they run out of
+   room (responsive), never stacking unnecessarily on a wide screen. */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    position: relative;
+    border-radius: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(16, 24, 40, 0.12);
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 24, 40, 0.18);
+}
+
+.kpi-card .kpi-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 0.4rem;
+}
+
+.kpi-card .kpi-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+/* color variants */
+.kpi-card.kpi-blue   { background: linear-gradient(135deg, #4f7cff, #3358e0); }
+.kpi-card.kpi-green  { background: linear-gradient(135deg, #2fb86b, #1f9d57); }
+.kpi-card.kpi-amber  { background: linear-gradient(135deg, #f5a524, #e08600); }
+.kpi-card.kpi-purple { background: linear-gradient(135deg, #9b6dff, #7a45e6); }
+.kpi-card.kpi-red    { background: linear-gradient(135deg, #f0654f, #d93a2b); }
+
+/* ── Charts ────────────────────────────────────────────────────── */
+/* Responsive grid that wraps; each card is fluid (%) but capped so a
+   single chart never sprawls across an ultra-wide screen, and never
+   shrinks below a usable width (it wraps instead). */
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: start;
+}
+
+.chart-card {
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.85rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 1rem 1.25rem;
+    width: 100%;
+    max-width: 460px;        /* cap on wide screens */
+    justify-self: center;
+}

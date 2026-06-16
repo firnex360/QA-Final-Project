@@ -69,6 +69,22 @@ public class ProductController(IProductService productService) : ControllerBase
         }
     }
 
+    // GET api/product/stats  — aggregated figures for the home dashboard
+    [HttpGet("stats")]
+    [Authorize(Policy = "CanRead")]
+    public async Task<IActionResult> GetStats()
+    {
+        try
+        {
+            var stats = await _productService.GetProductStatsAsync();
+            return Ok(stats);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while retrieving product stats.");
+        }
+    }
+
     // GET api/product/{id}
     [HttpGet("{id:int}")]
     [Authorize(Policy = "CanRead")]
@@ -86,8 +102,8 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product is null)
             return BadRequest("Product body is required.");
 
-        if (product.Id > 0)
-            return BadRequest("Can't update value ID.");
+        if (product.Id != 0 && product.Id != id)
+            return BadRequest("Body ID does not match the URL ID.");
         if (string.IsNullOrWhiteSpace(product.Name))
             return BadRequest("Name is required.");
         if (string.IsNullOrWhiteSpace(product.CodeSKU))
