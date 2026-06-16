@@ -5,9 +5,12 @@
 
 <PageTitle>Audit Log</PageTitle>
 
-<h1>Audit Logs</h1>
-
-<p>Welcome! Here, you'll be able to review the logs of recent updates made by our users.</p>
+<div class="page-header">
+    <div>
+        <h1 class="mb-1">Audit Logs</h1>
+        <p class="text-muted mb-0">Review recent changes made by users.</p>
+    </div>
+</div>
 
 @if (logs is null)
 {
@@ -15,35 +18,47 @@
 }
 else if (logs.Count == 0)
 {
-    <p>No audit records yet! :)</p>
+    <p class="text-muted">No audit records yet! :)</p>
 }
 else
 {
-    <table class="table table-sm">
-        <thead>
-            <tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Id</th><th>New Values</th><th>Old Values</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var log in PagedLogs)
-            {
-                <tr>
-                    <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                    <td>@log.UserId</td>
-                    <td>@log.Action</td>
-                    <td>@log.EntityName</td>
-                    <td>@log.EntityId</td>
-                    <td>@log.NewValues</td>
-                    <td>@log.OldValues</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table data-table align-middle">
+                <thead>
+                    <tr>
+                        <th>When (UTC)</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Id</th>
+                        <th>New Values</th>
+                        <th>Old Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in PagedLogs)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@log.UserId</td>
+                            <td><span class="badge @BadgeClass(log.Action)">@log.Action</span></td>
+                            <td class="fw-semibold">@log.EntityName</td>
+                            <td>@log.EntityId</td>
+                            <td><code class="json-cell">@log.NewValues</code></td>
+                            <td><code class="json-cell">@log.OldValues</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <nav class="d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">Previous</button>
-        <span>Page @currentPage of @TotalPages</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next</button>
-    </nav>
+    <div class="pager-bar">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
+        <span class="page-info">Page @currentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next ›</button>
+    </div>
 }
 
 @code {
@@ -62,4 +77,12 @@ else
 
     private void PrevPage() { if (currentPage > 1) currentPage--; }
     private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+
+    private static string BadgeClass(string action) => action switch
+    {
+        "Insert" => "text-bg-success",
+        "Update" => "text-bg-primary",
+        "Delete" => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
 }
