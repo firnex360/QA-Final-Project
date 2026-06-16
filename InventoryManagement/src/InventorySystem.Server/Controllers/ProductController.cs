@@ -11,30 +11,6 @@ public class ProductController(IProductService productService) : ControllerBase
 {
     private readonly IProductService _productService = productService;
 
-    // POST api/product/create  (hardcoded test product)
-    [HttpPost("testcreate")]
-    public async Task<IActionResult> TestCreate()
-    {
-        var product = await _productService.CreateProductAsync(new Product
-        {
-            Name = "Test Product",
-            CodeSKU = "TEST-001",
-            Description = "Hardcoded product for endpoint testing",
-            Category = "Testing",
-            Price = 10m,
-            Quantity = 5,
-            MinimumStockLevel = 1,
-            IsActive = true
-        });
-
-        return Ok(new
-        {
-            Message = "Product created successfully!",
-            ProductId = product.Id,
-            ProductName = product.Name
-        });
-    }
-
     // POST api/product: accepts a Product JSON body from the client (this is the one to use)
     [HttpPost]
     [Authorize(Policy = "CanCreate")]  
@@ -43,6 +19,8 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product is null)
             return BadRequest("Product body is required.");
 
+        if (product.Id > 0)
+            return BadRequest("Can't assigned values to ID.");
         if (string.IsNullOrWhiteSpace(product.Name))
             return BadRequest("Name is required.");
         if (string.IsNullOrWhiteSpace(product.CodeSKU))
@@ -58,13 +36,21 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product.MinimumStockLevel < 0)
             return BadRequest("Minimum stock level cannot be negative.");
 
-        var created = await _productService.CreateProductAsync(product);
-        return Ok(new
+        try
         {
-            Message = "Product created successfully!",
-            ProductId = created.Id,
-            ProductName = created.Name
-        });
+            var created = await _productService.CreateProductAsync(product);
+
+            return Ok(new
+            {
+                Message = "Product created successfully!",
+                ProductId = created.Id,
+                ProductName = created.Name
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while creating the product.");
+        }
     }
 
     // GET api/product
@@ -72,8 +58,15 @@ public class ProductController(IProductService productService) : ControllerBase
     [Authorize(Policy = "CanRead")]
     public async Task<IActionResult> GetAllProducts()
     {
-        var products = await _productService.GetAllProductsAsync();
-        return Ok(products);
+        try
+        {
+            var products = await _productService.GetAllProductsAsync();
+            return Ok(products);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An error occurred while retrieving products.");
+        }
     }
 
     // GET api/product/{id}
@@ -93,6 +86,8 @@ public class ProductController(IProductService productService) : ControllerBase
         if (product is null)
             return BadRequest("Product body is required.");
 
+        if (product.Id > 0)
+            return BadRequest("Can't update value ID.");
         if (string.IsNullOrWhiteSpace(product.Name))
             return BadRequest("Name is required.");
         if (string.IsNullOrWhiteSpace(product.CodeSKU))
@@ -107,7 +102,9 @@ public class ProductController(IProductService productService) : ControllerBase
             return BadRequest("Quantity cannot be negative.");
         if (product.MinimumStockLevel < 0)
             return BadRequest("Minimum stock level cannot be negative.");
+
         var existingProduct = await _productService.GetProductByIdAsync(id);
+
         if (existingProduct == null)
             return NotFound();
 
@@ -135,6 +132,7 @@ public class ProductController(IProductService productService) : ControllerBase
             return NotFound();
 
         await _productService.DeleteProductByIdAsync(id);
+
         return Ok(new 
         { 
             Message = "Product deleted successfully with id: " + product.Id
