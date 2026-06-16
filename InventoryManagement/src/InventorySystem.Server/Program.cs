@@ -81,7 +81,7 @@ var auditEventsCounter = Metrics.CreateCounter(
     "Total number of audited entity changes.",
     new CounterConfiguration { LabelNames = ["action", "entity"] });
 
-// ── Audit.NET Configuration ──────────────────────────────────────────
+// Audit.NET Configuration 
 // Tell Audit.NET to store audit events in the AuditLogs table
 // via the same ApplicationDbContext. Every SaveChanges/SaveChangesAsync
 // call on any audited entity will automatically produce an AuditLog record.
