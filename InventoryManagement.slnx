@@ -5,4 +5,7 @@
     <Project Path="InventoryManagement/src/InventorySystem.Server/InventorySystem.Server.csproj" />
     <Project Path="InventoryManagement/src/InventorySystem.Shared/InventorySystem.Shared.csproj" />
   </Folder>
+  <Folder Name="/InventoryManagement/test/">
+    <Project Path="InventoryManagement/test/unit-testing/unit-testing.csproj" />
+  </Folder>
 </Solution>
