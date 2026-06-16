@@ -7,18 +7,13 @@
 
 <PageTitle>Read</PageTitle>
 
-<h1>Read Products</h1>
-
-<p role="status">Read the information from the current thinga-ma-gig</p>
-
-<NavLink class="nav-link" href="create">
-    <button class="btn btn-primary">Create Product</button>
-</NavLink>
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-2" role="alert">@errorMessage</div>
-}
+<div class="page-header">
+    <div>
+        <h1 class="mb-1">Read Products</h1>
+        <p role="status" class="text-muted mb-0">Browse and manage the current inventory.</p>
+    </div>
+    <NavLink class="btn btn-primary" href="create">+ Create Product</NavLink>
+</div>
 
 @if (products == null)
 {
@@ -26,46 +21,78 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Code SKU</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Min. Stock</th>
-                <th>[A]</th>
-                <th>Edit</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var product in products)
-            {
-                <tr>
-                    <td>@product.Name</td>
-                    <td>@product.CodeSKU</td>
-                    <td>@product.Description</td>
-                    <td>@product.Category</td>
-                    <td>@product.Price</td>
-                    <td>@product.Quantity</td>
-                    <td>@product.MinimumStockLevel</td>
-                    <td>@product.IsActive</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table data-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code SKU</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Min. Stock</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in PagedProducts)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@product.Name</td>
+                            <td><span class="badge text-bg-light border">@product.CodeSKU</span></td>
+                            <td>@product.Description</td>
+                            <td>@product.Category</td>
+                            <td class="text-end">@product.Price.ToString("C")</td>
+                            <td class="text-end">@product.Quantity</td>
+                            <td class="text-end">@product.MinimumStockLevel</td>
+                            <td>
+                                @if (product.IsActive)
+                                {
+                                    <span class="badge text-bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+    <div class="pager-bar">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
+        <span class="page-info">Page @currentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next ›</button>
+    </div>
 }
 
 @code {
 
     private List<Product>? products;
     private string errorMessage = string.Empty;
+
+    private const int pageSize = 5;
+    private int currentPage = 1;
+    private int TotalPages => products is null || products.Count == 0 ? 1 : (int)Math.Ceiling(products.Count / (double)pageSize);
+    private IEnumerable<Product> PagedProducts =>
+        products is null ? Enumerable.Empty<Product>() : products.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
 
     private bool isAdmin;
     private bool isStaff;
@@ -81,7 +108,6 @@ else
 
         try
         {
-            products = await Http.GetFromJsonAsync<List<Product>>("api/product");
             products = await Http.GetFromJsonAsync<List<Product>>("api/product");
         }
         catch (Exception ex)
@@ -109,6 +135,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 products?.Remove(product);
+                if (currentPage > TotalPages) currentPage = TotalPages;
             }
             else
             {

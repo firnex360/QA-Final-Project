@@ -1,0 +1,88 @@
+@page "/audit"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Audit Log</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="mb-1">Audit Logs</h1>
+        <p class="text-muted mb-0">Review recent changes made by users.</p>
+    </div>
+</div>
+
+@if (logs is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (logs.Count == 0)
+{
+    <p class="text-muted">No audit records yet! :)</p>
+}
+else
+{
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table data-table align-middle">
+                <thead>
+                    <tr>
+                        <th>When (UTC)</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Id</th>
+                        <th>New Values</th>
+                        <th>Old Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in PagedLogs)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@log.UserId</td>
+                            <td><span class="badge @BadgeClass(log.Action)">@log.Action</span></td>
+                            <td class="fw-semibold">@log.EntityName</td>
+                            <td>@log.EntityId</td>
+                            <td><code class="json-cell">@log.NewValues</code></td>
+                            <td><code class="json-cell">@log.OldValues</code></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="pager-bar">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
+        <span class="page-info">Page @currentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next ›</button>
+    </div>
+}
+
+@code {
+    private List<AuditLogDto>? logs;
+    private const int pageSize = 5;
+    private int currentPage = 1;
+    private int TotalPages => logs is null || logs.Count == 0 ? 1 : (int)Math.Ceiling(logs.Count / (double)pageSize);
+    private IEnumerable<AuditLogDto> PagedLogs =>
+        logs is null ? Enumerable.Empty<AuditLogDto>() : logs.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit"); }
+        catch (Exception ex) { logs = new(); Console.Error.WriteLine(ex.Message); }
+    }
+
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+
+    private static string BadgeClass(string action) => action switch
+    {
+        "Insert" => "text-bg-success",
+        "Update" => "text-bg-primary",
+        "Delete" => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+}

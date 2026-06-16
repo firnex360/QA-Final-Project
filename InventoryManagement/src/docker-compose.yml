@@ -71,9 +71,10 @@ services:
       - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
     ports:
       - "8080:8080"
-    command: ["start-dev"]
+    command: ["start-dev", "--import-realm"]
     volumes:
       - keycloak-volume:/opt/keycloak/data
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     restart: on-failure:3
 
 volumes:
