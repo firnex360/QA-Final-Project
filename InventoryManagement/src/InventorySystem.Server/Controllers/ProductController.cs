@@ -47,16 +47,16 @@ public class ProductController(IProductService productService) : ControllerBase
                 ProductName = created.Name
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while creating the product.");
+            return StatusCode(500, $"An error occurred while creating products. \n\nException Message: {ex.Message}");
         }
     }
 
     // GET api/product
     // Accepts filters from the body 
     [HttpGet]
-    [Authorize(Policy = "CanRead")]
+    //[Authorize(Policy = "CanRead")]
     public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParameters parameters)
     {
         try
@@ -64,9 +64,9 @@ public class ProductController(IProductService productService) : ControllerBase
             var result = await _productService.GetProductsFilterAsync(parameters);
             return Ok(result);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while retrieving products.");
+            return StatusCode(500, $"An error occurred while retrieving products. \n\nException Message: {ex.Message}");
         }
     }
 
@@ -80,9 +80,9 @@ public class ProductController(IProductService productService) : ControllerBase
             var stats = await _productService.GetProductStatsAsync();
             return Ok(stats);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while retrieving product stats.");
+            return StatusCode(500, $"An error occurred while retrieving products. \n\nException Message: {ex.Message}");
         }
     }
 
@@ -123,7 +123,7 @@ public class ProductController(IProductService productService) : ControllerBase
         var existingProduct = await _productService.GetProductByIdAsync(id);
 
         if (existingProduct == null)
-            return NotFound();
+            return NotFound("An error occurred while updating the product. Product not found.");
 
         existingProduct.Name = product.Name;
         existingProduct.CodeSKU = product.CodeSKU;
@@ -146,7 +146,7 @@ public class ProductController(IProductService productService) : ControllerBase
     {
         var product = await _productService.GetProductByIdAsync(id);
         if (product == null)
-            return NotFound();
+            return NotFound("An error occurred while deleting the product. Product not found.");
 
         await _productService.DeleteProductByIdAsync(id);
 
