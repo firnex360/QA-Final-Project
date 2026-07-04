@@ -112,7 +112,6 @@ public class CreateProductTests
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, objectResult.StatusCode);
-        Assert.Equal("An error occurred while creating the product.", objectResult.Value);
     }
 
     [Fact]

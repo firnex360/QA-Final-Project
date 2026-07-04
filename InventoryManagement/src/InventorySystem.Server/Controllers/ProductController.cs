@@ -123,7 +123,7 @@ public class ProductController(IProductService productService) : ControllerBase
         var existingProduct = await _productService.GetProductByIdAsync(id);
 
         if (existingProduct == null)
-            return NotFound("An error occurred while updating the product. Product not found.");
+            return NotFound();
 
         existingProduct.Name = product.Name;
         existingProduct.CodeSKU = product.CodeSKU;
@@ -146,7 +146,7 @@ public class ProductController(IProductService productService) : ControllerBase
     {
         var product = await _productService.GetProductByIdAsync(id);
         if (product == null)
-            return NotFound("An error occurred while deleting the product. Product not found.");
+            return NotFound();
 
         await _productService.DeleteProductByIdAsync(id);
 
