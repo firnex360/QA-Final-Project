@@ -99,4 +99,65 @@ public class GetAllProductsTests
         Assert.Equal(500, objectResult.StatusCode);
         Assert.Equal("An error occurred while retrieving products. \n\nException Message: Database connection failed", objectResult.Value);
     }
+
+    [Fact]
+    public async Task GetAllProducts_WithSearchTerm_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { SearchTerm = "apple" };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal("apple", capturedParams.SearchTerm);
+    }
+
+    [Fact]
+    public async Task GetAllProducts_WithCategory_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { Category = "Electronics" };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal("Electronics", capturedParams.Category);
+    }
+
+    [Fact]
+    public async Task GetAllProducts_WithPagination_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { PageNumber = 3, PageSize = 15 };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal(3, capturedParams.PageNumber);
+        Assert.Equal(15, capturedParams.PageSize);
+    }
 }
