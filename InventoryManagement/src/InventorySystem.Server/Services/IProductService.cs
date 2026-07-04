@@ -7,6 +7,7 @@ public interface IProductService
     Task<Product> CreateProductAsync(Product product);
     Task<Product?> GetProductByIdAsync(int id);
     Task<List<Product>> GetAllProductsAsync();
+    Task<PagedResponse<Product>> GetProductsFilterAsync(ProductQueryParameters parameters);
     Task<ProductStatsDto> GetProductStatsAsync();
     Task UpdateProductAsync(Product product);
     Task DeleteProductByIdAsync(int id);

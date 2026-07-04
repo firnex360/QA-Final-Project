@@ -54,14 +54,15 @@ public class ProductController(IProductService productService) : ControllerBase
     }
 
     // GET api/product
+    // Accepts filters from the body 
     [HttpGet]
     [Authorize(Policy = "CanRead")]
-    public async Task<IActionResult> GetAllProducts()
+    public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParameters parameters)
     {
         try
         {
-            var products = await _productService.GetAllProductsAsync();
-            return Ok(products);
+            var result = await _productService.GetProductsFilterAsync(parameters);
+            return Ok(result);
         }
         catch (Exception)
         {
