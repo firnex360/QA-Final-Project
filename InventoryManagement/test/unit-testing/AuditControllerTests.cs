@@ -37,7 +37,7 @@ public class AuditControllerTests : IDisposable
             new AuditLog { Id = 1, EntityName = "Product", Action = "Create", Timestamp = oldDate, UserId = "User1" },
             new AuditLog { Id = 2, EntityName = "Product", Action = "Update", Timestamp = recentDate, UserId = "User2" }
         );
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
         var result = await _controller.GetAuditLogs();
@@ -70,7 +70,7 @@ public class AuditControllerTests : IDisposable
         }
         
         _dbContext.AuditLogs.AddRange(logsToInsert);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
         var result = await _controller.GetAuditLogs();
