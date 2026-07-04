@@ -36,9 +36,10 @@ public class ProductService(ApplicationDbContext context) : IProductService
             var term = p.SearchTerm.ToLower();
             
             query = query.Where(x =>
-                (x.Name != null && x.Name.Contains(term)) ||
-                (x.CodeSKU != null && x.CodeSKU.Contains(term)) ||
-                (x.Description != null && x.Description.Contains(term)));
+                (x.Name != null && x.Name.ToLower().Contains(term)) ||
+                (x.CodeSKU != null && x.CodeSKU.ToLower().Contains(term)) ||
+                (x.Description != null && x.Description.ToLower().Contains(term))
+            );
 
         }
 
