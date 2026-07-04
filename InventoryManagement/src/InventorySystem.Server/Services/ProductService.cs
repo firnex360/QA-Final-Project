@@ -34,10 +34,12 @@ public class ProductService(ApplicationDbContext context) : IProductService
         if (!string.IsNullOrWhiteSpace(p.SearchTerm))
         {
             var term = p.SearchTerm.ToLower();
+            
             query = query.Where(x =>
-                (x.Name != null && x.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase)) ||
-                (x.CodeSKU != null && x.CodeSKU.Contains(term, StringComparison.CurrentCultureIgnoreCase)) ||
-                (x.Description != null && x.Description.Contains(term, StringComparison.CurrentCultureIgnoreCase)));
+                (x.Name != null && x.Name.Contains(term)) ||
+                (x.CodeSKU != null && x.CodeSKU.Contains(term)) ||
+                (x.Description != null && x.Description.Contains(term)));
+
         }
 
         // Filter by category
