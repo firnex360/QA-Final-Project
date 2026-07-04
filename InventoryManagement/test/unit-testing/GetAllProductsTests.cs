@@ -34,8 +34,10 @@ public class GetAllProductsTests
             .Setup(s => s.GetAllProductsAsync())
             .ReturnsAsync(products);
 
+        var parameters = new ProductQueryParameters();    
+
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
@@ -47,12 +49,15 @@ public class GetAllProductsTests
     public async Task GetAllProducts_EmptyList_ReturnsOkWithEmptyList()
     {
         // Arrange
+
+        var parameters = new ProductQueryParameters();
+
         _mockService
             .Setup(s => s.GetAllProductsAsync())
             .ReturnsAsync(new List<Product>());
 
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
@@ -64,12 +69,15 @@ public class GetAllProductsTests
     public async Task GetAllProducts_ServiceThrowsException_ReturnsInternalServerError()
     {
         // Arrange
+
+        var parameters = new ProductQueryParameters();
+
         _mockService
             .Setup(s => s.GetAllProductsAsync())
             .ThrowsAsync(new Exception("Database connection failed"));
 
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(result);
