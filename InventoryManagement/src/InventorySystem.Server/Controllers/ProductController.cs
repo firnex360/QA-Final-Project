@@ -47,25 +47,26 @@ public class ProductController(IProductService productService) : ControllerBase
                 ProductName = created.Name
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while creating the product.");
+            return StatusCode(500, $"An error occurred while creating products. \n\nException Message: {ex.Message}");
         }
     }
 
     // GET api/product
+    // Accepts filters from the body 
     [HttpGet]
-    [Authorize(Policy = "CanRead")]
-    public async Task<IActionResult> GetAllProducts()
+    //[Authorize(Policy = "CanRead")]
+    public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParameters parameters)
     {
         try
         {
-            var products = await _productService.GetAllProductsAsync();
-            return Ok(products);
+            var result = await _productService.GetProductsFilterAsync(parameters);
+            return Ok(result);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while retrieving products.");
+            return StatusCode(500, $"An error occurred while retrieving products. \n\nException Message: {ex.Message}");
         }
     }
 
@@ -79,9 +80,9 @@ public class ProductController(IProductService productService) : ControllerBase
             var stats = await _productService.GetProductStatsAsync();
             return Ok(stats);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "An error occurred while retrieving product stats.");
+            return StatusCode(500, $"An error occurred while retrieving products. \n\nException Message: {ex.Message}");
         }
     }
 

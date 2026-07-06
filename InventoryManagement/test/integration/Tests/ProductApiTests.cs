@@ -112,11 +112,11 @@ public class ProductApiTests : IClassFixture<InventoryApiFactory>
 
         // Act
         var response = await _client.GetAsync("/api/product", TestContext.Current.CancellationToken);
-        var products = await response.Content.ReadFromJsonAsync<List<Product>>(cancellationToken: TestContext.Current.CancellationToken);
+        var products = await response.Content.ReadFromJsonAsync<PagedResponse<Product>>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(products);
-        Assert.Contains(products, p => p.Name == product.Name);
+        Assert.Contains(products.Items, p => p.Name == product.Name);
     }
 
     // test for get by id

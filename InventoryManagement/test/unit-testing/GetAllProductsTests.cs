@@ -30,50 +30,134 @@ public class GetAllProductsTests
             new() { Id = 2, Name = "Product B", CodeSKU = "B-002", Description = "Desc B", Category = "Cat B", Price = 20m, Quantity = 10, MinimumStockLevel = 2, IsActive = true }
         };
 
+        var pagedResponse = new PagedResponse<Product>
+        {
+            Items = products,
+            TotalCount = 2,
+            TotalPages = 1,
+            CurrentPage = 1
+        };
+
+        var parameters = new ProductQueryParameters();
+
         _mockService
-            .Setup(s => s.GetAllProductsAsync())
-            .ReturnsAsync(products);
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .ReturnsAsync(pagedResponse);
 
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-        Assert.Equal(2, returnedProducts.Count);
+        var returnedResponse = Assert.IsType<PagedResponse<Product>>(okResult.Value);
+        Assert.Equal(2, returnedResponse.Items.Count);
     }
 
     [Fact]
     public async Task GetAllProducts_EmptyList_ReturnsOkWithEmptyList()
     {
         // Arrange
+        var pagedResponse = new PagedResponse<Product>
+        {
+            Items = [],
+            TotalCount = 0,
+            TotalPages = 0,
+            CurrentPage = 1
+        };
+
+        var parameters = new ProductQueryParameters();
+
         _mockService
-            .Setup(s => s.GetAllProductsAsync())
-            .ReturnsAsync(new List<Product>());
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .ReturnsAsync(pagedResponse);
 
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-        Assert.Empty(returnedProducts);
+        var returnedResponse = Assert.IsType<PagedResponse<Product>>(okResult.Value);
+        Assert.Empty(returnedResponse.Items);
+        Assert.Equal(0, returnedResponse.TotalCount);
     }
 
     [Fact]
     public async Task GetAllProducts_ServiceThrowsException_ReturnsInternalServerError()
     {
         // Arrange
+        var parameters = new ProductQueryParameters();
+
         _mockService
-            .Setup(s => s.GetAllProductsAsync())
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
         // Act
-        var result = await _controller.GetAllProducts();
+        var result = await _controller.GetAllProducts(parameters);
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, objectResult.StatusCode);
-        Assert.Equal("An error occurred while retrieving products.", objectResult.Value);
+        Assert.Equal("An error occurred while retrieving products. \n\nException Message: Database connection failed", objectResult.Value);
+    }
+
+    [Fact]
+    public async Task GetAllProducts_WithSearchTerm_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { SearchTerm = "apple" };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal("apple", capturedParams.SearchTerm);
+    }
+
+    [Fact]
+    public async Task GetAllProducts_WithCategory_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { Category = "Electronics" };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal("Electronics", capturedParams.Category);
+    }
+
+    [Fact]
+    public async Task GetAllProducts_WithPagination_PassesParametersToService()
+    {
+        // Arrange
+        var parameters = new ProductQueryParameters { PageNumber = 3, PageSize = 15 };
+        ProductQueryParameters? capturedParams = null;
+
+        _mockService
+            .Setup(s => s.GetProductsFilterAsync(It.IsAny<ProductQueryParameters>()))
+            .Callback<ProductQueryParameters>(p => capturedParams = p)
+            .ReturnsAsync(new PagedResponse<Product>());
+
+        // Act
+        await _controller.GetAllProducts(parameters);
+
+        // Assert
+        Assert.NotNull(capturedParams);
+        Assert.Equal(3, capturedParams.PageNumber);
+        Assert.Equal(15, capturedParams.PageSize);
     }
 }
