@@ -38,7 +38,7 @@ else
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var product in PagedProducts)
+                    @foreach (var product in products)
                     {
                         <tr>
                             <td class="fw-semibold">@product.Name</td>
@@ -76,8 +76,8 @@ else
 
     <div class="pager-bar">
         <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
-        <span class="page-info">Page @currentPage of @TotalPages</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next ›</button>
+        <span class="page-info">Page @currentPage of @totalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == totalPages)" @onclick="NextPage">Next ›</button>
     </div>
 }
 
@@ -88,11 +88,40 @@ else
 
     private const int pageSize = 5;
     private int currentPage = 1;
-    private int TotalPages => products is null || products.Count == 0 ? 1 : (int)Math.Ceiling(products.Count / (double)pageSize);
-    private IEnumerable<Product> PagedProducts =>
-        products is null ? Enumerable.Empty<Product>() : products.Skip((currentPage - 1) * pageSize).Take(pageSize);
-    private void PrevPage() { if (currentPage > 1) currentPage--; }
-    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+    private int totalPages = 1;
+
+    private async Task PrevPage()
+    {
+        if (currentPage > 1)
+            await LoadProductsAsync(currentPage - 1);
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+            await LoadProductsAsync(currentPage + 1);
+    }
+
+    // Fetches a single page from the server, which handles the paging/filtering/sorting.
+    private async Task LoadProductsAsync(int page)
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<PagedResponse<Product>>(
+                $"api/product?pageNumber={page}&pageSize={pageSize}");
+
+            products = response?.Items ?? new List<Product>();
+            totalPages = response?.TotalPages ?? 1;
+            currentPage = response?.CurrentPage ?? 1;
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading products: {ex.Message}";
+            products = new List<Product>(); // show empty table instead of infinite spinner
+            Console.Error.WriteLine(ex.Message);
+        }
+    }
 
     private bool isAdmin;
     private bool isStaff;
@@ -106,16 +135,7 @@ else
         isStaff = user.IsInRole("staffY");
         isManager = user.IsInRole("managerY");
 
-        try
-        {
-            products = await Http.GetFromJsonAsync<List<Product>>("api/product");
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error loading products: {ex.Message}";
-            products = new List<Product>(); // show empty table instead of infinite spinner
-            Console.Error.WriteLine(ex.Message);
-        }
+        await LoadProductsAsync(currentPage);
     }
 
     private void EditProduct(Product product)
@@ -134,8 +154,9 @@ else
 
             if (response.IsSuccessStatusCode)
             {
-                products?.Remove(product);
-                if (currentPage > TotalPages) currentPage = TotalPages;
+                // Reload from the server so page counts stay in sync. The server clamps
+                // the page number, so deleting the last item on the last page falls back safely.
+                await LoadProductsAsync(currentPage);
             }
             else
             {
