@@ -124,6 +124,160 @@ code {
     margin-bottom: 1.25rem;
 }
 
+/* ── Filter bar (Read page: search, category, sort) ─────────── */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.filter-search {
+    position: relative;
+    flex: 1 1 16rem;
+    min-width: 12rem;
+}
+
+.filter-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+.filter-search .form-control {
+    padding-left: 2.1rem;
+}
+
+/* Icon buttons (category / sort) that open popovers */
+.filter-menu-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.filter-icon-btn {
+    position: relative;
+    width: 2.6rem;
+    height: 2.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    line-height: 1;
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    border-radius: 0.5rem;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.filter-icon-btn:hover {
+    background: #f4f6f9;
+    border-color: #98a2b3;
+}
+
+.filter-icon-btn.is-active {
+    border-color: #258cfb;
+    background: #eff6ff;
+}
+
+/* Small dot showing a filter/sort is applied */
+.filter-dot {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: #258cfb;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+}
+
+/* Popover panel */
+.filter-popup {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 30;
+    min-width: 12rem;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.6rem;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.08);
+    padding: 0.4rem;
+    animation: filter-popup-in 0.12s ease-out;
+}
+
+@keyframes filter-popup-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.filter-popup-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #98a2b3;
+    padding: 0.35rem 0.6rem 0.2rem;
+}
+
+.filter-popup-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.9rem;
+    color: #344054;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.filter-popup-item:hover {
+    background: #f4f6f9;
+}
+
+.filter-popup-item.selected {
+    background: #eff6ff;
+    color: #175cd3;
+    font-weight: 600;
+}
+
+.filter-popup-divider {
+    height: 1px;
+    background: #eaecf0;
+    margin: 0.35rem 0.3rem;
+}
+
+/* Transparent full-screen layer that closes popovers on outside click */
+.filter-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: transparent;
+}
+
+.filter-clear {
+    text-decoration: none;
+    color: #667085;
+}
+
+.filter-clear:hover {
+    color: #344054;
+    text-decoration: underline;
+}
+
 /* ── Data tables (Read / Audit) ──────────────────────────────── */
 .table-card {
     background: #fff;

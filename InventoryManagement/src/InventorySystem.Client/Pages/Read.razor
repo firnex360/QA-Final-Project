@@ -15,12 +15,86 @@
     <NavLink class="btn btn-primary" href="create">+ Create Product</NavLink>
 </div>
 
+<div class="filter-bar">
+    <div class="filter-search">
+        <span class="filter-search-icon">🔍</span>
+        <input class="form-control" type="search" placeholder="Search by name, SKU, or description..."
+               value="@searchTerm" @oninput="OnSearchInput" aria-label="Search products" />
+    </div>
+
+    <!-- Category filter -->
+    <div class="filter-menu-wrap">
+        <button class="btn filter-icon-btn @(HasCategoryFilter ? "is-active" : "")"
+                @onclick="ToggleCategoryMenu" title="Filter by category" aria-label="Filter by category">
+            🏷️
+            @if (HasCategoryFilter)
+            {
+                <span class="filter-dot"></span>
+            }
+        </button>
+        @if (showCategoryMenu)
+        {
+            <div class="filter-popup">
+                <div class="filter-popup-title">Category</div>
+                <button class="filter-popup-item @(selectedCategory == "" ? "selected" : "")"
+                        @onclick='() => SelectCategory("")'>All categories</button>
+                @foreach (var category in categories)
+                {
+                    <button class="filter-popup-item @(selectedCategory == category ? "selected" : "")"
+                            @onclick="() => SelectCategory(category)">@category</button>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Sort -->
+    <div class="filter-menu-wrap">
+        <button class="btn filter-icon-btn @(HasCustomSort ? "is-active" : "")"
+                @onclick="ToggleSortMenu" title="Sort" aria-label="Sort">
+            ↕️
+            @if (HasCustomSort)
+            {
+                <span class="filter-dot"></span>
+            }
+        </button>
+        @if (showSortMenu)
+        {
+            <div class="filter-popup">
+                <div class="filter-popup-title">Sort by</div>
+                @foreach (var opt in sortOptions)
+                {
+                    <button class="filter-popup-item @(sortBy == opt.Key ? "selected" : "")"
+                            @onclick="() => SelectSort(opt.Key)">@opt.Value</button>
+                }
+                <div class="filter-popup-divider"></div>
+                <div class="filter-popup-title">Direction</div>
+                <button class="filter-popup-item @(!sortDescending ? "selected" : "")"
+                        @onclick="() => SelectSortDirection(false)">↑ Ascending</button>
+                <button class="filter-popup-item @(sortDescending ? "selected" : "")"
+                        @onclick="() => SelectSortDirection(true)">↓ Descending</button>
+            </div>
+        }
+    </div>
+
+    @if (HasActiveFilters)
+    {
+        <button class="btn btn-link btn-sm filter-clear" @onclick="ClearFilters">Clear</button>
+    }
+</div>
+
+@if (showCategoryMenu || showSortMenu)
+{
+    <div class="filter-backdrop" @onclick="CloseMenus"></div>
+}
+
 @if (products == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
+    <p class="text-muted small mb-2">@totalCount product@(totalCount == 1 ? "" : "s") found</p>
+
     <div class="table-card">
         <div class="table-responsive">
             <table class="table data-table align-middle">
@@ -38,6 +112,14 @@ else
                     </tr>
                 </thead>
                 <tbody>
+                    @if (products.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No products match your search. <button class="btn btn-link btn-sm p-0 align-baseline" @onclick="ClearFilters">Clear filters</button>
+                            </td>
+                        </tr>
+                    }
                     @foreach (var product in products)
                     {
                         <tr>
@@ -89,6 +171,35 @@ else
     private const int pageSize = 5;
     private int currentPage = 1;
     private int totalPages = 1;
+    private int totalCount = 0;
+
+    // Filter/sort state — mirrors the server's ProductQueryParameters.
+    private string searchTerm = string.Empty;
+    private string selectedCategory = string.Empty;
+    private string sortBy = "name";
+    private bool sortDescending = false;
+    private List<string> categories = new();
+
+    // Popover open/closed state.
+    private bool showCategoryMenu = false;
+    private bool showSortMenu = false;
+
+    // Sort options, keyed by the value the server expects.
+    private readonly Dictionary<string, string> sortOptions = new()
+    {
+        ["name"] = "Name",
+        ["price"] = "Price",
+        ["quantity"] = "Quantity",
+        ["category"] = "Category",
+        ["codesku"] = "SKU",
+    };
+
+    private CancellationTokenSource? searchDebounce;
+
+    private bool HasCategoryFilter => !string.IsNullOrEmpty(selectedCategory);
+    private bool HasCustomSort => sortBy != "name" || sortDescending;
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(searchTerm) || HasCategoryFilter || HasCustomSort;
 
     private async Task PrevPage()
     {
@@ -102,17 +213,106 @@ else
             await LoadProductsAsync(currentPage + 1);
     }
 
+    // Debounce typing so we only hit the API after the user pauses (400 ms),
+    // instead of firing one request per keystroke.
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+
+        searchDebounce?.Cancel();
+        searchDebounce = new CancellationTokenSource();
+        var token = searchDebounce.Token;
+
+        try
+        {
+            await Task.Delay(400, token);
+            await LoadProductsAsync(1); // new search always starts at page 1
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            // superseded by a newer keystroke — do nothing
+        }
+    }
+
+    // Only one popover open at a time; clicking the same button toggles it closed.
+    private void ToggleCategoryMenu()
+    {
+        showCategoryMenu = !showCategoryMenu;
+        showSortMenu = false;
+    }
+
+    private void ToggleSortMenu()
+    {
+        showSortMenu = !showSortMenu;
+        showCategoryMenu = false;
+    }
+
+    private void CloseMenus()
+    {
+        showCategoryMenu = false;
+        showSortMenu = false;
+    }
+
+    private async Task SelectCategory(string category)
+    {
+        selectedCategory = category;
+        CloseMenus();
+        await LoadProductsAsync(1);
+    }
+
+    private async Task SelectSort(string key)
+    {
+        sortBy = key;
+        showSortMenu = false; // keep the sort popover open feel snappy but close after picking
+        await LoadProductsAsync(1);
+    }
+
+    private async Task SelectSortDirection(bool descending)
+    {
+        sortDescending = descending;
+        showSortMenu = false;
+        await LoadProductsAsync(1);
+    }
+
+    private async Task ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedCategory = string.Empty;
+        sortBy = "name";
+        sortDescending = false;
+        CloseMenus();
+        await LoadProductsAsync(1);
+    }
+
+    // Builds the query string to send to the API in server-side paging/filtering/sorting.
+    private string BuildQuery(int page)
+    {
+        var query = $"api/product?pageNumber={page}&pageSize={pageSize}";
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+            query += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
+        if (!string.IsNullOrEmpty(selectedCategory))
+            query += $"&category={Uri.EscapeDataString(selectedCategory)}";
+        if (sortBy != "name")
+            query += $"&sortBy={sortBy}";
+        if (sortDescending)
+            query += "&sortDescending=true";
+
+        return query;
+    }
+
     // Fetches a single page from the server, which handles the paging/filtering/sorting.
     private async Task LoadProductsAsync(int page)
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<PagedResponse<Product>>(
-                $"api/product?pageNumber={page}&pageSize={pageSize}");
+            var response = await Http.GetFromJsonAsync<PagedResponse<Product>>(BuildQuery(page));
 
             products = response?.Items ?? new List<Product>();
             totalPages = response?.TotalPages ?? 1;
             currentPage = response?.CurrentPage ?? 1;
+            totalCount = response?.TotalCount ?? 0;
             errorMessage = string.Empty;
         }
         catch (Exception ex)
@@ -120,6 +320,21 @@ else
             errorMessage = $"Error loading products: {ex.Message}";
             products = new List<Product>(); // show empty table instead of infinite spinner
             Console.Error.WriteLine(ex.Message);
+        }
+    }
+
+    // Reuses the existing stats endpoint — its ByCategory list gives us every
+    // distinct category without adding any new server code.
+    private async Task LoadCategoriesAsync()
+    {
+        try
+        {
+            var stats = await Http.GetFromJsonAsync<ProductStatsDto>("api/product/stats");
+            categories = stats?.ByCategory.Select(c => c.Label).OrderBy(c => c).ToList() ?? new();
+        }
+        catch
+        {
+            categories = new(); // dropdown just shows "All categories" if stats are unavailable
         }
     }
 
@@ -135,7 +350,8 @@ else
         isStaff = user.IsInRole("staffY");
         isManager = user.IsInRole("managerY");
 
-        await LoadProductsAsync(currentPage);
+        // Load the first page and the category list in parallel — independent requests.
+        await Task.WhenAll(LoadProductsAsync(currentPage), LoadCategoriesAsync());
     }
 
     private void EditProduct(Product product)

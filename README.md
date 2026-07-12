@@ -31,6 +31,12 @@ Can boot up the project through doker compose.
 
 That's it!1
 
+oh and to reset visuals (to avoid always running the whole docker)
+docker compose up -d --build client
+
+and for the bd when it needs a reset
+dotnet ef database update
+
 
 
 # How to run the actual project (without Docker Compose)
