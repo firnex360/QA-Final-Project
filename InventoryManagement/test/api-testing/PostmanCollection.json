@@ -1,0 +1,187 @@
+{
+  "info": {
+    "name": "Inventory System API Tests",
+    "description": "Black-Box API testing for the Inventory System ProductController.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET All Products",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response payload contains a valid JSON array of items\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    // The API returns a PagedResponse object, so we check if 'items' is an array",
+              "    var isArray = Array.isArray(jsonData) || (jsonData.items && Array.isArray(jsonData.items));",
+              "    pm.expect(isArray).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/product",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST Create Product (Valid Data)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 or 201\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test(\"Response contains an id property\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    // Depending on the exact API response, the ID might be returned in 'productId' or 'id'",
+              "    var id = jsonData.productId || jsonData.id;",
+              "    pm.expect(id).to.exist;",
+              "    ",
+              "    // Save the ID to an environment/collection variable for the next test",
+              "    pm.collectionVariables.set(\"createdProductId\", id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Test Product\",\n  \"codeSKU\": \"PM-TEST-001\",\n  \"description\": \"A product created via Postman tests.\",\n  \"category\": \"Testing\",\n  \"price\": 19.99,\n  \"quantity\": 100,\n  \"minimumStockLevel\": 10,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/product",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET Product By ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Payload contains the correct name and sku\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.name).to.eql(\"Postman Test Product\");",
+              "    pm.expect(jsonData.codeSKU).to.eql(\"PM-TEST-001\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/product/{{createdProductId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product",
+            "{{createdProductId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST Create Product (Invalid Data - Negative Price)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Invalid Product\",\n  \"codeSKU\": \"INV-001\",\n  \"description\": \"Product with negative price.\",\n  \"category\": \"Testing\",\n  \"price\": -5.00,\n  \"quantity\": 10,\n  \"minimumStockLevel\": 5,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/product",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8090",
+      "type": "string"
+    },
+    {
+      "key": "createdProductId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
