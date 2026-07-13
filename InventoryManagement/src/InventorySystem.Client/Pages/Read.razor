@@ -476,146 +476,6 @@ else
         }
     }
 
-    // Filter/sort state — mirrors the server's ProductQueryParameters.
-    private string searchTerm = string.Empty;
-    private string selectedCategory = string.Empty;
-    private string sortBy = "name";
-    private bool sortDescending = false;
-    private List<string> categories = new();
-
-    // Popover open/closed state.
-    private bool showCategoryMenu = false;
-    private bool showSortMenu = false;
-
-    // Sort options, keyed by the value the server expects.
-    private readonly Dictionary<string, string> sortOptions = new()
-    {
-        ["name"] = "Name",
-        ["price"] = "Price",
-        ["quantity"] = "Quantity",
-        ["category"] = "Category",
-        ["codesku"] = "SKU",
-    };
-
-    private bool HasCategoryFilter => !string.IsNullOrEmpty(selectedCategory);
-    private bool HasCustomSort => sortBy != "name" || sortDescending;
-    private bool HasActiveFilters =>
-        !string.IsNullOrWhiteSpace(searchTerm) || HasCategoryFilter || HasCustomSort;
-
-    private async Task PrevPage()
-    {
-        if (currentPage > 1)
-            await LoadProductsAsync(currentPage - 1);
-    }
-
-    private async Task NextPage()
-    {
-        if (currentPage < totalPages)
-            await LoadProductsAsync(currentPage + 1);
-    }
-
-    // Debounce typing so we only hit the API after the user pauses (400 ms),
-    // instead of firing one request per keystroke.
-    private async Task OnSearchInput(ChangeEventArgs e)
-    {
-        searchTerm = e.Value?.ToString() ?? string.Empty;
-
-
-        try
-        {
-            await Task.Delay(400);
-            await LoadProductsAsync(1); // new search always starts at page 1
-            StateHasChanged();
-        }
-        catch (TaskCanceledException)
-        {
-            // superseded by a newer keystroke — do nothing
-        }
-    }
-
-    // Only one popover open at a time; clicking the same button toggles it closed.
-    private void ToggleCategoryMenu()
-    {
-        showCategoryMenu = !showCategoryMenu;
-        showSortMenu = false;
-    }
-
-    private void ToggleSortMenu()
-    {
-        showSortMenu = !showSortMenu;
-        showCategoryMenu = false;
-    }
-
-    private void CloseMenus()
-    {
-        showCategoryMenu = false;
-        showSortMenu = false;
-    }
-
-    private async Task SelectCategory(string category)
-    {
-        selectedCategory = category;
-        CloseMenus();
-        await LoadProductsAsync(1);
-    }
-
-    private async Task SelectSort(string key)
-    {
-        sortBy = key;
-        showSortMenu = false; // keep the sort popover open feel snappy but close after picking
-        await LoadProductsAsync(1);
-    }
-
-    private async Task SelectSortDirection(bool descending)
-    {
-        sortDescending = descending;
-        showSortMenu = false;
-        await LoadProductsAsync(1);
-    }
-
-    private async Task ClearFilters()
-    {
-        searchTerm = string.Empty;
-        selectedCategory = string.Empty;
-        sortBy = "name";
-        sortDescending = false;
-        CloseMenus();
-        await LoadProductsAsync(1);
-    }
-
-    // Builds the query string to send to the API in server-side paging/filtering/sorting.
-    private string BuildQuery(int page)
-    {
-        var query = $"api/product?pageNumber={page}&pageSize={pageSize}";
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-            query += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
-        if (!string.IsNullOrEmpty(selectedCategory))
-            query += $"&category={Uri.EscapeDataString(selectedCategory)}";
-        if (sortBy != "name")
-            query += $"&sortBy={sortBy}";
-        if (sortDescending)
-            query += "&sortDescending=true";
-
-        // Load the first page and the stats in parallel — independent requests.
-        await Task.WhenAll(LoadProductsAsync(currentPage), RefreshStatsAsync());
-    }
-
-    // Reuses the existing stats endpoint — its ByCategory list gives us every
-    // distinct category without adding any new server code.
-    private async Task LoadCategoriesAsync()
-    {
-        try
-        {
-            var stats = await Http.GetFromJsonAsync<ProductStatsDto>("api/product/stats");
-            categories = stats?.ByCategory.Select(c => c.Label).OrderBy(c => c).ToList() ?? new();
-        }
-        catch
-        {
-            categories = new(); // dropdown just shows "All categories" if stats are unavailable
-        }
-    }
-
     private bool isAdmin;
     private bool isStaff;
     private bool isManager;
@@ -628,8 +488,8 @@ else
         isStaff = user.IsInRole("staffY");
         isManager = user.IsInRole("managerY");
 
-        // Load the first page and the category list in parallel — independent requests.
-        await Task.WhenAll(LoadProductsAsync(currentPage), LoadCategoriesAsync());
+        // Load the first page and the stats in parallel — independent requests.
+        await Task.WhenAll(LoadProductsAsync(currentPage), RefreshStatsAsync());
     }
 
     private void EditProduct(Product product)
