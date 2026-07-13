@@ -20,7 +20,7 @@ public class ProductService(ApplicationDbContext context) : IProductService
     {
         return await _context.Products.FindAsync(id);
     }
-
+    //dead code, no longer used, but kept for reference
     public async Task<List<Product>> GetAllProductsAsync()
     {
         return await _context.Products.ToListAsync();
