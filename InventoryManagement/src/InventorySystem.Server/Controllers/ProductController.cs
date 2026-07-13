@@ -139,6 +139,25 @@ public class ProductController(IProductService productService) : ControllerBase
         return Ok(existingProduct);
     }
 
+    // PATCH api/product/{id}/stock?delta=N — quick stock in/out (positive delta = in, negative = out)
+    [HttpPatch("{id:int}/stock")]
+    [Authorize(Policy = "CanUpdate")]
+    public async Task<IActionResult> AdjustStock(int id, [FromQuery] int delta)
+    {
+        if (delta == 0)
+            return BadRequest("Delta cannot be zero.");
+
+        try
+        {
+            var updated = await _productService.AdjustStockAsync(id, delta);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     // DELETE api/product/{id}
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "CanDelete")]

@@ -47,6 +47,10 @@ public class ProductService(ApplicationDbContext context) : IProductService
         if (!string.IsNullOrWhiteSpace(p.Category))
             query = query.Where(x => x.Category == p.Category);
 
+        // Only products at or below their minimum stock level
+        if (p.LowStockOnly)
+            query = query.Where(x => x.Quantity <= x.MinimumStockLevel);
+
         // Sorting
         query = (p.SortBy?.ToLower()) switch
         {
@@ -97,6 +101,24 @@ public class ProductService(ApplicationDbContext context) : IProductService
     public async Task UpdateProductAsync(Product product)
     {
         await _context.SaveChangesAsync();
+    }
+    
+    // Quick stock movement: positive delta = stock in, negative = stock out.
+    public async Task<Product?> AdjustStockAsync(int id, int delta)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product is null)
+            return null;
+
+        var newQuantity = product.Quantity + delta;
+        if (newQuantity < 0)
+            throw new InvalidOperationException(
+                $"Stock cannot go below zero. Current quantity is {product.Quantity}, requested change is {delta}.");
+
+        product.Quantity = newQuantity;
+        await _context.SaveChangesAsync();
+
+        return product;
     }
 
     public async Task DeleteProductByIdAsync(int id)

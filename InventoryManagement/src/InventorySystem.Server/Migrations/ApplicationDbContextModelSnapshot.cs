@@ -59,7 +59,7 @@ namespace InventorySystem.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("InventorySystem.Shared.Models.Product", b =>
@@ -96,7 +96,7 @@ namespace InventorySystem.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 #pragma warning restore 612, 618
         }

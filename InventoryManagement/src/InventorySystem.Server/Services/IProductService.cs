@@ -10,5 +10,6 @@ public interface IProductService
     Task<PagedResponse<Product>> GetProductsFilterAsync(ProductQueryParameters parameters);
     Task<ProductStatsDto> GetProductStatsAsync();
     Task UpdateProductAsync(Product product);
+    Task<Product?> AdjustStockAsync(int id, int delta);
     Task DeleteProductByIdAsync(int id);
 }
