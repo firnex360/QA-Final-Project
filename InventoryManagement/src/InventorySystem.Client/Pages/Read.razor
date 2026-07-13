@@ -9,8 +9,8 @@
 
 <div class="page-header">
     <div>
-        <h1 class="mb-1">Read Products</h1>
-        <p role="status" class="text-muted mb-0">Browse and manage the current inventory.</p>
+        <h1 class="mb-1">Products</h1>
+        <p role="status" class="text-muted mb-0">Browse, filter, and manage the current inventory.</p>
     </div>
     <NavLink class="btn btn-primary" href="create">+ Create Product</NavLink>
 </div>
@@ -21,6 +21,12 @@
         <input class="form-control" type="search" placeholder="Search by name, SKU, or description..."
                value="@searchTerm" @oninput="OnSearchInput" aria-label="Search products" />
     </div>
+
+    <!-- Low stock filter chip -->
+    <button class="btn filter-chip @(lowStockOnly ? "is-on" : "")" @onclick="ToggleLowStock"
+            title="Show only products at or below their minimum stock level">
+        ⚠️ Low stock@(lowStockCount > 0 ? $" ({lowStockCount})" : "")
+    </button>
 
     <!-- Category filter -->
     <div class="filter-menu-wrap">
@@ -87,6 +93,11 @@
     <div class="filter-backdrop" @onclick="CloseMenus"></div>
 }
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
 @if (products == null)
 {
     <p><em>Loading...</em></p>
@@ -95,66 +106,76 @@ else
 {
     <p class="text-muted small mb-2">@totalCount product@(totalCount == 1 ? "" : "s") found</p>
 
-    <div class="table-card">
-        <div class="table-responsive">
-            <table class="table data-table align-middle">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Code SKU</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th class="text-end">Price</th>
-                        <th class="text-end">Quantity</th>
-                        <th class="text-end">Min. Stock</th>
-                        <th>Status</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (products.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="9" class="text-center text-muted py-4">
-                                No products match your search. <button class="btn btn-link btn-sm p-0 align-baseline" @onclick="ClearFilters">Clear filters</button>
-                            </td>
-                        </tr>
-                    }
-                    @foreach (var product in products)
-                    {
-                        <tr>
-                            <td class="fw-semibold">@product.Name</td>
-                            <td><span class="badge text-bg-light border">@product.CodeSKU</span></td>
-                            <td>@product.Description</td>
-                            <td>@product.Category</td>
-                            <td class="text-end">@product.Price.ToString("C")</td>
-                            <td class="text-end">@product.Quantity</td>
-                            <td class="text-end">@product.MinimumStockLevel</td>
-                            <td>
-                                @if (product.IsActive)
-                                {
-                                    <span class="badge text-bg-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge text-bg-secondary">Inactive</span>
-                                }
-                            </td>
-                            <td class="text-end text-nowrap">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    @if (products.Count == 0)
+    {
+        <div class="empty-state">
+            No products match your filters.
+            <button class="btn btn-link btn-sm p-0 align-baseline" @onclick="ClearFilters">Clear filters</button>
         </div>
-    </div>
+    }
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger" role="alert">@errorMessage</div>
-}
+    <div class="product-grid">
+        @foreach (var product in products)
+        {
+            <div class="product-card @StockStateClass(product)">
+                <div class="product-card-head">
+                    <div class="product-name" title="@product.Name">@product.Name</div>
+                    <span class="stock-badge @StockStateClass(product)">@StockStateLabel(product)</span>
+                </div>
+
+                <div class="product-meta">
+                    <span class="badge text-bg-light border">@product.CodeSKU</span>
+                    <span class="product-category">@product.Category</span>
+                    @if (!product.IsActive)
+                    {
+                        <span class="badge text-bg-secondary">Inactive</span>
+                    }
+                </div>
+
+                <p class="product-desc" title="@product.Description">@product.Description</p>
+
+                <div class="product-stock-row">
+                    <div class="product-price">@product.Price.ToString("C")</div>
+                    <div class="product-qty" title="Minimum stock level: @product.MinimumStockLevel">
+                        <span class="qty-number">@product.Quantity</span>
+                        <span class="qty-min">/ min @product.MinimumStockLevel</span>
+                    </div>
+                </div>
+
+                <!-- Quick stock in/out -->
+                <div class="stock-actions">
+                    <button class="btn stock-btn stock-out" title="Stock out"
+                            @onclick="() => OpenAdjust(product, stockIn: false)">−</button>
+                    <button class="btn stock-btn stock-in" title="Stock in"
+                            @onclick="() => OpenAdjust(product, stockIn: true)">+</button>
+                    <div class="card-actions">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                    </div>
+                </div>
+
+                @if (adjustProductId == product.Id)
+                {
+                    <div class="stock-adjust-panel">
+                        <div class="stock-adjust-title">
+                            @(adjustIsStockIn ? "📦 Stock in" : "📤 Stock out") — how many?
+                        </div>
+                        <div class="stock-adjust-controls">
+                            <input class="form-control form-control-sm stock-adjust-amount" type="number" min="1"
+                                   @bind="adjustAmount" aria-label="Amount" />
+                        </div>
+                        <div class="stock-adjust-buttons">
+                            <button class="btn btn-sm @(adjustIsStockIn ? "btn-success" : "btn-warning")"
+                                    disabled="@adjustBusy" @onclick="ConfirmAdjust">
+                                @(adjustBusy ? "Saving..." : adjustIsStockIn ? $"Add {adjustAmount}" : $"Remove {adjustAmount}")
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="CloseAdjust">Cancel</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 
     <div class="pager-bar">
         <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
@@ -163,26 +184,43 @@ else
     </div>
 }
 
+@if (!string.IsNullOrEmpty(toastMessage))
+{
+    <div class="stock-toast" role="status">@toastMessage</div>
+}
+
 @code {
 
     private List<Product>? products;
     private string errorMessage = string.Empty;
 
-    private const int pageSize = 5;
+    private const int pageSize = 8;
     private int currentPage = 1;
     private int totalPages = 1;
     private int totalCount = 0;
+    private int lowStockCount = 0;
 
     // Filter/sort state — mirrors the server's ProductQueryParameters.
     private string searchTerm = string.Empty;
     private string selectedCategory = string.Empty;
     private string sortBy = "name";
     private bool sortDescending = false;
+    private bool lowStockOnly = false;
     private List<string> categories = new();
 
     // Popover open/closed state.
     private bool showCategoryMenu = false;
     private bool showSortMenu = false;
+
+    // Quick stock adjustment state (one panel open at a time).
+    private int? adjustProductId = null;
+    private bool adjustIsStockIn = true;
+    private int adjustAmount = 1;
+    private bool adjustBusy = false;
+
+    // Post-movement toast ("Widget: 12 → 15").
+    private string toastMessage = string.Empty;
+    private CancellationTokenSource? toastTimer;
 
     // Sort options, keyed by the value the server expects.
     private readonly Dictionary<string, string> sortOptions = new()
@@ -194,11 +232,100 @@ else
         ["codesku"] = "SKU",
     };
 
+    private CancellationTokenSource? searchDebounce;
+
     private bool HasCategoryFilter => !string.IsNullOrEmpty(selectedCategory);
     private bool HasCustomSort => sortBy != "name" || sortDescending;
     private bool HasActiveFilters =>
-        !string.IsNullOrWhiteSpace(searchTerm) || HasCategoryFilter || HasCustomSort;
+        !string.IsNullOrWhiteSpace(searchTerm) || HasCategoryFilter || HasCustomSort || lowStockOnly;
 
+    // ── Stock state helpers ─────────────────────────────────────────
+    private static string StockStateClass(Product p) =>
+        p.Quantity == 0 ? "stock-state-out"
+        : p.Quantity <= p.MinimumStockLevel ? "stock-state-low"
+        : "stock-state-ok";
+
+    private static string StockStateLabel(Product p) =>
+        p.Quantity == 0 ? "Out of stock"
+        : p.Quantity <= p.MinimumStockLevel ? "Low stock"
+        : "In stock";
+
+    // ── Quick stock adjustment ──────────────────────────────────────
+    private void OpenAdjust(Product product, bool stockIn)
+    {
+        adjustProductId = product.Id;
+        adjustIsStockIn = stockIn;
+        adjustAmount = 1;
+        CloseMenus();
+    }
+
+    private void CloseAdjust()
+    {
+        adjustProductId = null;
+        adjustBusy = false;
+    }
+
+    private async Task ConfirmAdjust()
+    {
+        if (adjustProductId is not int id || adjustAmount < 1)
+            return;
+
+        var product = products?.FirstOrDefault(p => p.Id == id);
+        if (product is null)
+            return;
+
+        adjustBusy = true;
+        var delta = adjustIsStockIn ? adjustAmount : -adjustAmount;
+        var previousQuantity = product.Quantity;
+
+        try
+        {
+            var response = await Http.PatchAsync($"api/product/{id}/stock?delta={delta}", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var updated = await response.Content.ReadFromJsonAsync<Product>();
+                if (updated is not null)
+                    product.Quantity = updated.Quantity;
+
+                await ShowToast($"{product.Name}: {previousQuantity} → {product.Quantity}" +
+                                (adjustIsStockIn ? "  📦 in" : "  📤 out"));
+                CloseAdjust();
+                await RefreshStatsAsync(); // keep the low-stock chip count current
+
+                // If we're filtering by low stock, the product may have left the filter — reload.
+                if (lowStockOnly)
+                    await LoadProductsAsync(currentPage);
+            }
+            else
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+                adjustBusy = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Stock update failed: {ex.Message}";
+            adjustBusy = false;
+        }
+    }
+
+    private async Task ShowToast(string message)
+    {
+        toastMessage = message;
+        toastTimer?.Cancel();
+        toastTimer = new CancellationTokenSource();
+        var token = toastTimer.Token;
+        try
+        {
+            await Task.Delay(3500, token);
+            toastMessage = string.Empty;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException) { /* replaced by a newer toast */ }
+    }
+
+    // ── Paging ──────────────────────────────────────────────────────
     private async Task PrevPage()
     {
         if (currentPage > 1)
@@ -211,16 +338,20 @@ else
             await LoadProductsAsync(currentPage + 1);
     }
 
+    // ── Filters ─────────────────────────────────────────────────────
     // Debounce typing so we only hit the API after the user pauses (400 ms),
     // instead of firing one request per keystroke.
     private async Task OnSearchInput(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? string.Empty;
 
+        searchDebounce?.Cancel();
+        searchDebounce = new CancellationTokenSource();
+        var token = searchDebounce.Token;
 
         try
         {
-            await Task.Delay(400);
+            await Task.Delay(400, token);
             await LoadProductsAsync(1); // new search always starts at page 1
             StateHasChanged();
         }
@@ -228,6 +359,12 @@ else
         {
             // superseded by a newer keystroke — do nothing
         }
+    }
+
+    private async Task ToggleLowStock()
+    {
+        lowStockOnly = !lowStockOnly;
+        await LoadProductsAsync(1);
     }
 
     // Only one popover open at a time; clicking the same button toggles it closed.
@@ -259,7 +396,7 @@ else
     private async Task SelectSort(string key)
     {
         sortBy = key;
-        showSortMenu = false; // keep the sort popover open feel snappy but close after picking
+        showSortMenu = false;
         await LoadProductsAsync(1);
     }
 
@@ -276,11 +413,14 @@ else
         selectedCategory = string.Empty;
         sortBy = "name";
         sortDescending = false;
+        lowStockOnly = false;
         CloseMenus();
         await LoadProductsAsync(1);
     }
 
-    // Builds the query string to send to the API in server-side paging/filtering/sorting.
+    // ── Data loading ────────────────────────────────────────────────
+    // Builds the query string the server's ProductQueryParameters binds from.
+    // Only non-default values are included, keeping URLs clean.
     private string BuildQuery(int page)
     {
         var query = $"api/product?pageNumber={page}&pageSize={pageSize}";
@@ -293,6 +433,8 @@ else
             query += $"&sortBy={sortBy}";
         if (sortDescending)
             query += "&sortDescending=true";
+        if (lowStockOnly)
+            query += "&lowStockOnly=true";
 
         return query;
     }
@@ -313,23 +455,24 @@ else
         catch (Exception ex)
         {
             errorMessage = $"Error loading products: {ex.Message}";
-            products = new List<Product>(); // show empty table instead of infinite spinner
+            products = new List<Product>(); // show empty grid instead of infinite spinner
             Console.Error.WriteLine(ex.Message);
         }
     }
 
-    // Reuses the existing stats endpoint — its ByCategory list gives us every
-    // distinct category without adding any new server code.
-    private async Task LoadCategoriesAsync()
+    // Reuses the existing stats endpoint — gives us the category list for the
+    // filter dropdown AND the live low-stock count for the chip.
+    private async Task RefreshStatsAsync()
     {
         try
         {
             var stats = await Http.GetFromJsonAsync<ProductStatsDto>("api/product/stats");
             categories = stats?.ByCategory.Select(c => c.Label).OrderBy(c => c).ToList() ?? new();
+            lowStockCount = stats?.LowStockCount ?? 0;
         }
         catch
         {
-            categories = new(); // dropdown just shows "All categories" if stats are unavailable
+            categories = new(); // chip/dropdown just degrade gracefully if stats are unavailable
         }
     }
 
@@ -345,14 +488,15 @@ else
         isStaff = user.IsInRole("staffY");
         isManager = user.IsInRole("managerY");
 
-        // Load the first page and the category list in parallel — independent requests.
-        await Task.WhenAll(LoadProductsAsync(currentPage), LoadCategoriesAsync());
+        // Load the first page and the stats in parallel — independent requests.
+        await Task.WhenAll(LoadProductsAsync(currentPage), RefreshStatsAsync());
     }
 
     private void EditProduct(Product product)
     {
         NavigationManager.NavigateTo($"/edit/{product.Id}");
     }
+
     private async Task DeleteProduct(Product product)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'??? This cannot be undone, pal.");
@@ -368,6 +512,7 @@ else
                 // Reload from the server so page counts stay in sync. The server clamps
                 // the page number, so deleting the last item on the last page falls back safely.
                 await LoadProductsAsync(currentPage);
+                await RefreshStatsAsync();
             }
             else
             {

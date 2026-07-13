@@ -20,4 +20,7 @@ public class ProductQueryParameters
 
     /// <summary>If true, sort descending; otherwise ascending.</summary>
     public bool SortDescending { get; set; }
+
+    /// <summary>If true, only products at or below their minimum stock level.</summary>
+    public bool LowStockOnly { get; set; }
 }
