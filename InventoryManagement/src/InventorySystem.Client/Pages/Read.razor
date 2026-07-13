@@ -194,8 +194,6 @@ else
         ["codesku"] = "SKU",
     };
 
-    private CancellationTokenSource? searchDebounce;
-
     private bool HasCategoryFilter => !string.IsNullOrEmpty(selectedCategory);
     private bool HasCustomSort => sortBy != "name" || sortDescending;
     private bool HasActiveFilters =>
@@ -219,13 +217,10 @@ else
     {
         searchTerm = e.Value?.ToString() ?? string.Empty;
 
-        searchDebounce?.Cancel();
-        searchDebounce = new CancellationTokenSource();
-        var token = searchDebounce.Token;
 
         try
         {
-            await Task.Delay(400, token);
+            await Task.Delay(400);
             await LoadProductsAsync(1); // new search always starts at page 1
             StateHasChanged();
         }
