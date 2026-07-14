@@ -1,5 +1,5 @@
 @page "/"
-
+@attribute [Authorize(Policy = "report:view")]
 @inject HttpClient Http
 
 <PageTitle>Dashboard</PageTitle>

@@ -58,19 +58,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+string[] permissions =
+[
+    "product:view",   // Ver productos
+    "product:manage", // Crear, editar y eliminar productos
+    "stock:view",     // Ver existencia e historial
+    "stock:manage",   // Registrar entradas, salidas y ajustes
+    "report:view",    // Ver reportes y dashboard
+    "user:manage",    // Gestionar usuarios, roles y permisos
+    "audit:view"      // Consultar auditoría del sistema
+];
+
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("CanCreate", policy =>
-        policy.RequireRole( "adminY", "managerY"));
-
-    options.AddPolicy("CanRead", policy =>
-        policy.RequireRole("adminY", "managerY", "staffY"));
-
-    options.AddPolicy("CanUpdate", policy =>
-        policy.RequireRole("adminY", "managerY"));
-
-    options.AddPolicy("CanDelete", policy =>
-        policy.RequireRole("adminY"));
+    foreach (var permission in permissions)
+        options.AddPolicy(permission, policy => policy.RequireRole(permission));
 });
 
 

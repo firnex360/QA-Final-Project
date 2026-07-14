@@ -13,7 +13,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // POST api/product: accepts a Product JSON body from the client (this is the one to use)
     [HttpPost]
-    [Authorize(Policy = "CanCreate")]  
+    [Authorize(Policy = "product:manage")]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
     {
         if (product is null)
@@ -56,7 +56,7 @@ public class ProductController(IProductService productService) : ControllerBase
     // GET api/product
     // Accepts filters from the body 
     [HttpGet]
-    //[Authorize(Policy = "CanRead")]
+    [Authorize(Policy = "product:view")]
     public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParameters parameters)
     {
         try
@@ -72,7 +72,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // GET api/product/stats  — aggregated figures for the home dashboard
     [HttpGet("stats")]
-    [Authorize(Policy = "CanRead")]
+    [Authorize(Policy = "report:view")]
     public async Task<IActionResult> GetStats()
     {
         try
@@ -88,7 +88,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // GET api/product/{id}
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "CanRead")]
+    [Authorize(Policy = "product:view")]
     public async Task<IActionResult> GetProductById(int id)
     {
         var product = await _productService.GetProductByIdAsync(id);
@@ -97,7 +97,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // PUT api/product/{id}
     [HttpPut("{id:int}")]
-    [Authorize(Policy = "CanUpdate")]
+    [Authorize(Policy = "product:manage")]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
     {
         if (product is null)
@@ -141,7 +141,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // PATCH api/product/{id}/stock?delta=N — quick stock in/out (positive delta = in, negative = out)
     [HttpPatch("{id:int}/stock")]
-    [Authorize(Policy = "CanUpdate")]
+    [Authorize(Policy = "stock:manage")]
     public async Task<IActionResult> AdjustStock(int id, [FromQuery] int delta)
     {
         if (delta == 0)
@@ -160,7 +160,7 @@ public class ProductController(IProductService productService) : ControllerBase
 
     // DELETE api/product/{id}
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "CanDelete")]
+    [Authorize(Policy = "product:manage")]
     public async Task<IActionResult> DeleteProduct(int id)
     {
         var product = await _productService.GetProductByIdAsync(id);

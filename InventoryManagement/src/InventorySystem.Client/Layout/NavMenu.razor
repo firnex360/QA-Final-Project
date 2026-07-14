@@ -9,26 +9,34 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="audit">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Audit
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="create">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="read">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Read
-            </NavLink>
-        </div>
+        <AuthorizeView Policy="report:view">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="audit:view">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="audit">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Audit
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="product:manage">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="create">
+                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create
+                </NavLink>
+            </div>
+        </AuthorizeView>
+        <AuthorizeView Policy="product:view">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="read">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Read
+                </NavLink>
+            </div>
+        </AuthorizeView>
     </nav>
 </div>
 

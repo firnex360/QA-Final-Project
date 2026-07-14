@@ -1,5 +1,5 @@
 @page "/read"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "product:view")]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
@@ -12,7 +12,10 @@
         <h1 class="mb-1">Products</h1>
         <p role="status" class="text-muted mb-0">Browse, filter, and manage the current inventory.</p>
     </div>
-    <NavLink class="btn btn-primary" href="create">+ Create Product</NavLink>
+    @if (canManageProducts)
+    {
+        <NavLink class="btn btn-primary" href="create">+ Create Product</NavLink>
+    }
 </div>
 
 <div class="filter-bar">
@@ -142,16 +145,22 @@ else
                     </div>
                 </div>
 
-                <!-- Quick stock in/out -->
+                <!-- Quick stock in/out (stock:manage) + edit/delete (product:manage) -->
                 <div class="stock-actions">
-                    <button class="btn stock-btn stock-out" title="Stock out"
-                            @onclick="() => OpenAdjust(product, stockIn: false)">−</button>
-                    <button class="btn stock-btn stock-in" title="Stock in"
-                            @onclick="() => OpenAdjust(product, stockIn: true)">+</button>
-                    <div class="card-actions">
-                        <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
-                    </div>
+                    @if (canManageStock)
+                    {
+                        <button class="btn stock-btn stock-out" title="Stock out"
+                                @onclick="() => OpenAdjust(product, stockIn: false)">−</button>
+                        <button class="btn stock-btn stock-in" title="Stock in"
+                                @onclick="() => OpenAdjust(product, stockIn: true)">+</button>
+                    }
+                    @if (canManageProducts)
+                    {
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                        </div>
+                    }
                 </div>
 
                 @if (adjustProductId == product.Id)
@@ -476,17 +485,17 @@ else
         }
     }
 
-    private bool isAdmin;
-    private bool isStaff;
-    private bool isManager;
+    // Permission flags from the JWT "roles" claim — Keycloak expands the user's
+    // composite role into these granular permissions. The UI never checks role names.
+    private bool canManageProducts;
+    private bool canManageStock;
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        isAdmin = user.IsInRole("adminY");
-        isStaff = user.IsInRole("staffY");
-        isManager = user.IsInRole("managerY");
+        canManageProducts = user.IsInRole("product:manage");
+        canManageStock = user.IsInRole("stock:manage");
 
         // Load the first page and the stats in parallel — independent requests.
         await Task.WhenAll(LoadProductsAsync(currentPage), RefreshStatsAsync());

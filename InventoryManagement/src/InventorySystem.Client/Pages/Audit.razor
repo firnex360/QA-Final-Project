@@ -1,5 +1,5 @@
 @page "/audit"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "audit:view")]
 @inject HttpClient Http
 @inject AuthenticationStateProvider AuthStateProvider
 
