@@ -12,7 +12,9 @@
 // ============================================================================
 
 using NBomber.CSharp;
+using NBomber.Contracts;
 using NBomber.Http.CSharp;
+using NBomber.Contracts.Stats;
 
 // Reuse a single HttpClient to avoid socket exhaustion
 var httpClient = new HttpClient();
@@ -71,6 +73,14 @@ var randomSpikeScenario = Scenario.Create("random_spike_get_products", async con
 // RUN ALL SCENARIOS
 NBomberRunner
     .RegisterScenarios(loadTestScenario, stressTestScenario, randomSpikeScenario)
+    .WithTestName("Inventory API Performance Tests")   
+    .WithReportFileName("Performance_Report")   
+    .WithReportFolder("reports")              
+    .WithReportFormats(                              
+        ReportFormat.Html, 
+        ReportFormat.Md,
+        ReportFormat.Txt
+    )
     .Run();
 
 Console.WriteLine("\n=== Performance tests complete! Check the /reports folder for the HTML report. ===");
