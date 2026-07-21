@@ -2,6 +2,7 @@ using System.Text.Json;
 using Audit.Core;
 using InventorySystem.Server.Data;
 using InventorySystem.Server.Models;
+using InventorySystem.Server.OpenApi;
 using InventorySystem.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -13,7 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Declare the JWT Bearer scheme so Scalar shows an "Authorize" box and actually
+// sends the Authorization header (otherwise every protected endpoint returns 401).
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
 
 // Register controllers
 builder.Services.AddControllers();
