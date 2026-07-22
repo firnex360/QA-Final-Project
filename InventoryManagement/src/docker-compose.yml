@@ -30,6 +30,7 @@ services:
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
       - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
       - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration
+      - Keycloak__TokenUrl=http://keycloak:8080/realms/inventory-realm/protocol/openid-connect/token
     ports:
       - "8090:8080"
     depends_on:
@@ -69,6 +70,7 @@ services:
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_HOSTNAME_URL=http://localhost:8080
     ports:
       - "8080:8080"
     command: ["start-dev", "--import-realm"]
