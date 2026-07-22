@@ -8,6 +8,10 @@ using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Prometheus;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,6 +75,50 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy("CanDelete", policy =>
         policy.RequireRole("adminY"));
+});
+
+// OpenTelemetry Configuration Stuff
+var otelResource = ResourceBuilder.CreateDefault()
+    .AddService(serviceName: "InventoryServer", serviceVersion: "1.0.0");
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(serviceName: "InventoryServer", serviceVersion: "1.0.0"))
+    .WithTracing(tracing => tracing
+        .SetResourceBuilder(otelResource)
+        .AddAspNetCoreInstrumentation(options =>
+        {
+            options.RecordException = true;
+        })
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation(options =>
+        {
+            options.SetDbStatementForText = true;
+        })
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(builder.Configuration["OTLP:Endpoint"] ?? "http://localhost:4317");
+        }))
+    .WithMetrics(metrics => metrics
+        .SetResourceBuilder(otelResource)
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(builder.Configuration["OTLP:Endpoint"] ?? "http://localhost:4317");
+        }));
+
+// Configure OpenTelemetry Logging Exporter
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.SetResourceBuilder(otelResource);
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+    logging.ParseStateValues = true;
+    logging.AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri(builder.Configuration["OTLP:Endpoint"] ?? "http://localhost:4317");
+    });
 });
 
 
