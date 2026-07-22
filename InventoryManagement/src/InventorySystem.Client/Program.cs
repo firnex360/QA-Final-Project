@@ -85,10 +85,26 @@ namespace InventorySystem.Client
 
                 foreach (var packed in packedClaims)
                 {
+                    string[]? roles;
+                    try
+                    {
+                        roles = System.Text.Json.JsonSerializer.Deserialize<string[]>(packed.Value);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        // Malformed value: leave the original claim untouched rather than
+                        // throwing, which would surface as the user being signed out.
+                        continue;
+                    }
+
+                    // Nothing usable to replace it with — keep the claim as it is.
+                    if (roles is null || roles.Length == 0)
+                        continue;
+
+                    // Only swap the packed claim out once we know the replacement is good.
                     identity.RemoveClaim(packed);
 
-                    var roles = System.Text.Json.JsonSerializer.Deserialize<string[]>(packed.Value) ?? [];
-                    foreach (var role in roles)
+                    foreach (var role in roles.Where(r => !string.IsNullOrWhiteSpace(r)))
                         identity.AddClaim(new System.Security.Claims.Claim(options.RoleClaim, role));
                 }
             }
