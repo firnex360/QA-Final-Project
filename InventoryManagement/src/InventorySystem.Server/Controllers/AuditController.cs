@@ -12,7 +12,7 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
 {
     // GET api/audit — most recent audit records (admin + manager only)
     [HttpGet]
-    [Authorize(Policy = "CanUpdate")]   // adminY + managerY; use "CanDelete" for admin-only
+    [Authorize]
     public async Task<IActionResult> GetAuditLogs()
     {
         var logs = await db.AuditLogs
@@ -31,7 +31,7 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
 
     // GET api/audit/stats — aggregated audit figures for the admin dashboard
     [HttpGet("stats")]
-    [Authorize(Policy = "CanUpdate")]
+    [Authorize]
     public async Task<IActionResult> GetAuditStats()
     {
         var today = DateTime.UtcNow.Date;

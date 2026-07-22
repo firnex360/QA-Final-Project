@@ -303,10 +303,86 @@
       ],
       "inventory-client": [
         {
+          "id": "a1e10001-0000-4000-8000-000000000001",
+          "name": "product:view",
+          "description": "Ver productos",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10002-0000-4000-8000-000000000002",
+          "name": "product:manage",
+          "description": "Crear, editar y eliminar productos",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10003-0000-4000-8000-000000000003",
+          "name": "stock:view",
+          "description": "Ver existencia e historial",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10004-0000-4000-8000-000000000004",
+          "name": "stock:manage",
+          "description": "Registrar entradas, salidas y ajustes",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10005-0000-4000-8000-000000000005",
+          "name": "report:view",
+          "description": "Ver reportes y dashboard",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10006-0000-4000-8000-000000000006",
+          "name": "user:manage",
+          "description": "Gestionar usuarios, roles y permisos",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
+          "id": "a1e10007-0000-4000-8000-000000000007",
+          "name": "audit:view",
+          "description": "Consultar auditoria del sistema",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
+          "attributes": {}
+        },
+        {
           "id": "ecb02c9c-3657-4ddf-8a60-959b657669cd",
           "name": "adminY",
-          "description": "",
-          "composite": false,
+          "description": "Administrador: todos los permisos",
+          "composite": true,
+          "composites": {
+            "client": {
+              "inventory-client": [
+                "product:view",
+                "product:manage",
+                "stock:view",
+                "stock:manage",
+                "report:view",
+                "user:manage",
+                "audit:view"
+              ]
+            }
+          },
           "clientRole": true,
           "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
           "attributes": {}
@@ -314,8 +390,17 @@
         {
           "id": "42db7efd-c8ad-4848-b45a-8c35e4760d6b",
           "name": "staffY",
-          "description": "",
-          "composite": false,
+          "description": "Personal: solo lectura de productos, stock y reportes",
+          "composite": true,
+          "composites": {
+            "client": {
+              "inventory-client": [
+                "product:view",
+                "stock:view",
+                "report:view"
+              ]
+            }
+          },
           "clientRole": true,
           "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
           "attributes": {}
@@ -323,8 +408,20 @@
         {
           "id": "58386a8d-d93f-4d47-a479-af961495febf",
           "name": "managerY",
-          "description": "",
-          "composite": false,
+          "description": "Gerente: gestiona productos y stock, consulta auditoria",
+          "composite": true,
+          "composites": {
+            "client": {
+              "inventory-client": [
+                "product:view",
+                "product:manage",
+                "stock:view",
+                "stock:manage",
+                "report:view",
+                "audit:view"
+              ]
+            }
+          },
           "clientRole": true,
           "containerId": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
           "attributes": {}
@@ -696,6 +793,241 @@
         "organization",
         "microprofile-jwt"
       ]
+    },
+    {
+      "id": "bb53e7a9-b27d-41e4-8002-0449d0e21d7f",
+      "clientId": "inventory-api",
+      "name": "",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1784737277",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "oauth2.jwt.authorization.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "dpop.bound.access.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "service_account",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ],
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": true,
+        "policyEnforcementMode": "ENFORCING",
+        "resources": [
+          {
+            "name": "Products",
+            "ownerManagedAccess": false,
+            "displayName": "Products",
+            "attributes": {},
+            "uris": [
+              "/api/product/*"
+            ],
+            "scopes": [
+              {
+                "name": "view"
+              },
+              {
+                "name": "manage"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "ProductStats",
+            "ownerManagedAccess": false,
+            "displayName": "ProductStats",
+            "attributes": {},
+            "uris": [
+              "/api/product/stats"
+            ],
+            "scopes": [
+              {
+                "name": "view"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "ProductStock",
+            "ownerManagedAccess": false,
+            "displayName": "ProductStock",
+            "attributes": {},
+            "uris": [
+              "/api/product/*/stock"
+            ],
+            "scopes": [
+              {
+                "name": "manage"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "Audit",
+            "ownerManagedAccess": false,
+            "displayName": "Audit",
+            "attributes": {},
+            "uris": [
+              "/api/audit/*"
+            ],
+            "scopes": [
+              {
+                "name": "view"
+              }
+            ],
+            "icon_uri": ""
+          }
+        ],
+        "policies": [
+          {
+            "name": "is-admin",
+            "description": "",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "fetchRoles": "false",
+              "roles": "[{\"id\":\"inventory-client/adminY\",\"required\":false}]"
+            }
+          },
+          {
+            "name": "is-manager",
+            "description": "",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "fetchRoles": "false",
+              "roles": "[{\"id\":\"inventory-client/managerY\",\"required\":false}]"
+            }
+          },
+          {
+            "name": "is-staff",
+            "description": "",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "fetchRoles": "false",
+              "roles": "[{\"id\":\"inventory-client/staffY\",\"required\":false}]"
+            }
+          },
+          {
+            "name": "Can View Products",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Products\"]",
+              "scopes": "[\"view\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\",\"is-staff\"]"
+            }
+          },
+          {
+            "name": "Can Manage Products",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Products\"]",
+              "scopes": "[\"manage\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\"]"
+            }
+          },
+          {
+            "name": "Can view stats",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"ProductStats\"]",
+              "scopes": "[\"view\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\",\"is-staff\"]"
+            }
+          },
+          {
+            "name": "Can manage stock",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"ProductStock\"]",
+              "scopes": "[\"manage\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\"]"
+            }
+          },
+          {
+            "name": "Can view audit",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Audit\"]",
+              "scopes": "[\"view\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\"]"
+            }
+          }
+        ],
+        "scopes": [
+          {
+            "name": "view",
+            "iconUri": ""
+          },
+          {
+            "name": "manage",
+            "iconUri": ""
+          }
+        ],
+        "decisionStrategy": "UNANIMOUS"
+      }
     },
     {
       "id": "5a399b7e-c088-49ae-80f3-90b048fdeabb",
