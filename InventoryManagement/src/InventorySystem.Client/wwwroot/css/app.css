@@ -124,6 +124,451 @@ code {
     margin-bottom: 1.25rem;
 }
 
+/* ── Filter bar (Read page: search, category, sort) ─────────── */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.filter-search {
+    position: relative;
+    flex: 1 1 16rem;
+    min-width: 12rem;
+}
+
+.filter-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+.filter-search .form-control {
+    padding-left: 2.1rem;
+}
+
+/* Icon buttons (category / sort) that open popovers */
+.filter-menu-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.filter-icon-btn {
+    position: relative;
+    width: 2.6rem;
+    height: 2.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    line-height: 1;
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    border-radius: 0.5rem;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.filter-icon-btn:hover {
+    background: #f4f6f9;
+    border-color: #98a2b3;
+}
+
+.filter-icon-btn.is-active {
+    border-color: #258cfb;
+    background: #eff6ff;
+}
+
+/* Small dot showing a filter/sort is applied */
+.filter-dot {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: #258cfb;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+}
+
+/* Popover panel */
+.filter-popup {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 30;
+    min-width: 12rem;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 0.6rem;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.08);
+    padding: 0.4rem;
+    animation: filter-popup-in 0.12s ease-out;
+}
+
+@keyframes filter-popup-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.filter-popup-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #98a2b3;
+    padding: 0.35rem 0.6rem 0.2rem;
+}
+
+.filter-popup-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.9rem;
+    color: #344054;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.filter-popup-item:hover {
+    background: #f4f6f9;
+}
+
+.filter-popup-item.selected {
+    background: #eff6ff;
+    color: #175cd3;
+    font-weight: 600;
+}
+
+.filter-popup-divider {
+    height: 1px;
+    background: #eaecf0;
+    margin: 0.35rem 0.3rem;
+}
+
+/* Transparent full-screen layer that closes popovers on outside click */
+.filter-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: transparent;
+}
+
+.filter-clear {
+    text-decoration: none;
+    color: #667085;
+}
+
+.filter-clear:hover {
+    color: #344054;
+    text-decoration: underline;
+}
+
+/* Low-stock toggle chip */
+.filter-chip {
+    flex: 0 0 auto;
+    height: 2.6rem;
+    padding: 0 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    border-radius: 2rem;
+    color: #475467;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.filter-chip:hover {
+    background: #fffaeb;
+    border-color: #f79009;
+}
+
+.filter-chip.is-on {
+    background: #fffaeb;
+    border-color: #f79009;
+    color: #b54708;
+}
+
+/* ── Product cards (Read page) ───────────────────────────────── */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.product-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-left: 4px solid #12b76a; /* stock state accent */
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 1rem;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.product-card:hover {
+    box-shadow: 0 6px 16px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.06);
+    transform: translateY(-2px);
+}
+
+.product-card.stock-state-low { border-left-color: #f79009; }
+.product-card.stock-state-out { border-left-color: #f04438; }
+
+.product-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.product-name {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #101828;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Stock status badge */
+.stock-badge {
+    flex: 0 0 auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.55rem;
+    border-radius: 2rem;
+    white-space: nowrap;
+}
+
+.stock-badge.stock-state-ok  { background: #ecfdf3; color: #067647; border: 1px solid #abefc6; }
+.stock-badge.stock-state-low { background: #fffaeb; color: #b54708; border: 1px solid #fedf89; }
+.stock-badge.stock-state-out { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+
+.product-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+}
+
+.product-category { color: #667085; }
+
+.product-desc {
+    font-size: 0.85rem;
+    color: #475467;
+    margin: 0;
+    min-height: 2.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.product-stock-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: auto; /* pushes price/qty + actions to the card bottom */
+}
+
+.product-price {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #101828;
+}
+
+.product-qty .qty-number {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #101828;
+}
+
+.product-qty .qty-min {
+    font-size: 0.75rem;
+    color: #98a2b3;
+}
+
+.stock-state-low .qty-number { color: #b54708; }
+.stock-state-out .qty-number { color: #b42318; }
+
+/* Quick in/out buttons + edit/delete row */
+.stock-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-top: 1px solid #f2f4f7;
+    padding-top: 0.65rem;
+}
+
+.stock-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
+.stock-btn.stock-in  { background: #ecfdf3; color: #067647; border: 1px solid #abefc6; }
+.stock-btn.stock-in:hover  { background: #d1fadf; }
+.stock-btn.stock-out { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+.stock-btn.stock-out:hover { background: #fee4e2; }
+
+.card-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.35rem;
+}
+
+/* Inline adjust panel that expands inside the card */
+.stock-adjust-panel {
+    background: #f9fafb;
+    border: 1px solid #eaecf0;
+    border-radius: 0.5rem;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stock-adjust-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #344054;
+}
+
+.stock-adjust-controls {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.stock-adjust-amount { max-width: 5rem; }
+
+.stock-adjust-buttons {
+    display: flex;
+    gap: 0.4rem;
+}
+
+/* Post-movement toast */
+.stock-toast {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 50;
+    background: #101828;
+    color: #fff;
+    font-size: 0.9rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 0.6rem;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
+    animation: stock-toast-in 0.2s ease-out;
+}
+
+@keyframes stock-toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.empty-state {
+    background: #fff;
+    border: 1px dashed #d0d5dd;
+    border-radius: 0.75rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #667085;
+    margin-bottom: 1rem;
+}
+
+/* ── Audit page: change pills ────────────────────────────────── */
+.changes-cell {
+    max-width: 30rem;
+}
+
+.audit-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.15rem 0;
+}
+
+.audit-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2rem;
+    border: 1px solid;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pill-field { font-weight: 600; opacity: 0.75; }
+.pill-field::after { content: ":"; }
+
+.pill-arrow { opacity: 0.5; }
+
+.pill-value { font-weight: 600; }
+
+/* Inserts: green — new data coming in */
+.audit-pill.pill-insert {
+    background: #ecfdf3;
+    border-color: #abefc6;
+    color: #067647;
+}
+
+/* Deletes: red — data going away */
+.audit-pill.pill-delete {
+    background: #fef3f2;
+    border-color: #fecdca;
+    color: #b42318;
+}
+
+/* Updates: neutral pill with a red→green diff inside */
+.audit-pill.pill-update {
+    background: #f9fafb;
+    border-color: #e6e8ec;
+    color: #475467;
+}
+
+.audit-pill.pill-update .pill-old {
+    color: #b42318;
+    text-decoration: line-through;
+    text-decoration-color: rgba(180, 35, 24, 0.45);
+}
+
+.audit-pill.pill-update .pill-value {
+    color: #067647;
+}
+
 /* ── Data tables (Read / Audit) ──────────────────────────────── */
 .table-card {
     background: #fff;

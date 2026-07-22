@@ -91,22 +91,33 @@ else
                         <th>User</th>
                         <th>Action</th>
                         <th>Entity</th>
-                        <th>Id</th>
-                        <th>New Values</th>
-                        <th>Old Values</th>
+                        <th>Changes</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var log in PagedLogs)
                     {
                         <tr>
-                            <td class="text-nowrap">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="text-nowrap text-muted">@log.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
                             <td>@log.UserId</td>
                             <td><span class="badge @BadgeClass(log.Action)">@log.Action</span></td>
-                            <td class="fw-semibold">@log.EntityName</td>
-                            <td>@log.EntityId</td>
-                            <td><code class="json-cell">@log.NewValues</code></td>
-                            <td><code class="json-cell">@log.OldValues</code></td>
+                            <td><span class="fw-semibold">@log.EntityName</span> <span class="text-muted">#@log.EntityId</span></td>
+                            <td class="changes-cell">
+                                <div class="audit-pills">
+                                    @foreach (var change in GetChanges(log))
+                                    {
+                                        <span class="audit-pill @PillClass(log.Action)" title="@PillTooltip(change)">
+                                            <span class="pill-field">@change.Field</span>
+                                            @if (change.OldValue is not null)
+                                            {
+                                                <span class="pill-old">@Truncate(change.OldValue)</span>
+                                                <span class="pill-arrow">→</span>
+                                            }
+                                            <span class="pill-value">@Truncate(change.NewValue)</span>
+                                        </span>
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -150,4 +161,70 @@ else
         "Delete" => "text-bg-danger",
         _ => "text-bg-secondary"
     };
+
+    private record ChangeRow(string Field, string? OldValue, string NewValue);
+
+    // turns the raw OldValues/NewValues JSON into "Field: old → new" pills.
+    private static List<ChangeRow> GetChanges(AuditLogDto log)
+    {
+        var oldVals = ParseJson(log.OldValues);
+        var newVals = ParseJson(log.NewValues);
+
+        return log.Action switch
+        {
+            "Update" => newVals
+                .Select(kv => new ChangeRow(kv.Key, oldVals.GetValueOrDefault(kv.Key, "—"), kv.Value))
+                .ToList(),
+            "Insert" => AllRows(newVals),
+            "Delete" => AllRows(oldVals),
+            _ => new List<ChangeRow>()
+        };
+    }
+
+    // every field as its own pill, most meaningful first.
+    private static List<ChangeRow> AllRows(Dictionary<string, string> values)
+    {
+        string[] preferredOrder = ["Name", "CodeSKU", "Category", "Price", "Quantity", "MinimumStockLevel"];
+
+        return values
+            .Where(kv => kv.Key != "Id")
+            .OrderBy(kv => { var i = Array.IndexOf(preferredOrder, kv.Key); return i < 0 ? int.MaxValue : i; })
+            .Select(kv => new ChangeRow(kv.Key, null, kv.Value))
+            .ToList();
+    }
+
+    // long values are cut at 30 chars so pills stay compact.
+    private static string Truncate(string? value, int max = 30) =>
+        string.IsNullOrEmpty(value) || value.Length <= max ? value ?? "" : value[..max] + "…";
+
+    private static string PillTooltip(ChangeRow change) =>
+        change.OldValue is null
+            ? $"{change.Field}: {change.NewValue}"
+            : $"{change.Field}: {change.OldValue} → {change.NewValue}";
+
+    private static string PillClass(string action) => action switch
+    {
+        "Insert" => "pill-insert",
+        "Delete" => "pill-delete",
+        _ => "pill-update"
+    };
+
+    private static Dictionary<string, string> ParseJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return new();
+        try
+        {
+            var parsed = System.Text.Json.JsonSerializer
+                .Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(json);
+            return parsed?.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value.ValueKind == System.Text.Json.JsonValueKind.Null ? "—" : kv.Value.ToString()
+            ) ?? new();
+        }
+        catch
+        {
+            return new(); // malformed JSON — just render nothing rather than crash the page
+        }
+    }
 }
