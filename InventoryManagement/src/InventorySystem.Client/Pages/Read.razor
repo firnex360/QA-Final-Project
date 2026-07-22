@@ -154,11 +154,17 @@ else
                         <button class="btn stock-btn stock-in" title="Stock in"
                                 @onclick="() => OpenAdjust(product, stockIn: true)">+</button>
                     }
-                    @if (canManageProducts)
+                    @if (canManageProducts || canDeleteProducts)
                     {
                         <div class="card-actions">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                            @if (canManageProducts)
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProduct(product)">Edit</button>
+                            }
+                            @if (canDeleteProducts)
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product)">Delete</button>
+                            }
                         </div>
                     }
                 </div>
@@ -488,8 +494,9 @@ else
     // What the user may do comes from Keycloak (via /api/permissions/me), not from
     // anything declared in this project. Presentation only — the API enforces the same
     // policies, so hiding a button is convenience, not security.
-    private bool canManageProducts => Permissions.Has("Products", "manage");
-    private bool canManageStock => Permissions.Has("ProductStock", "manage");
+    private bool canManageProducts => Permissions.Has(Resources.Products, Scopes.Manage);
+    private bool canDeleteProducts => Permissions.Has(Resources.Products, Scopes.Delete);
+    private bool canManageStock => Permissions.Has(Resources.ProductStock, Scopes.Manage);
 
     protected override async Task OnInitializedAsync()
     {

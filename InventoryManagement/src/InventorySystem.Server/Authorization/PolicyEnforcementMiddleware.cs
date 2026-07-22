@@ -1,3 +1,4 @@
+using InventorySystem.Shared.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -46,7 +47,7 @@ public sealed class PolicyEnforcementMiddleware(
         // Present on every real request; empty only under test authentication schemes.
         var token = ExtractBearerToken(context) ?? string.Empty;
         var path = context.Request.Path.Value ?? "/";
-        var scope = ScopeForMethod(context.Request.Method);
+        var scope = ScopeForRequest(context);
 
         var decision = await decisions.EvaluateAsync(token, path, scope, context.RequestAborted);
 
@@ -96,11 +97,28 @@ public sealed class PolicyEnforcementMiddleware(
         return true;
     }
 
-    /// <summary>Read verbs map to the "view" scope, write verbs to "manage".</summary>
-    private static string ScopeForMethod(string method) =>
-        HttpMethods.IsGet(method) || HttpMethods.IsHead(method)
-            ? "view"
-            : "manage";
+    /// <summary>
+    /// Resolves the scope to ask Keycloak for. An explicit [RequiresScope] wins;
+    /// otherwise the HTTP verb decides: reads are "view", deletes are "delete"
+    /// (so removal can be restricted separately from editing), and the remaining
+    /// write verbs are "manage".
+    /// </summary>
+    private static string ScopeForRequest(HttpContext context)
+    {
+        var declared = context.GetEndpoint()?.Metadata.GetMetadata<RequiresScopeAttribute>();
+        if (declared is not null)
+            return declared.Scope;
+
+        var method = context.Request.Method;
+
+        if (HttpMethods.IsGet(method) || HttpMethods.IsHead(method))
+            return Scopes.View;
+
+        if (HttpMethods.IsDelete(method))
+            return Scopes.Delete;
+
+        return Scopes.Manage;
+    }
 
     private static string? ExtractBearerToken(HttpContext context)
     {

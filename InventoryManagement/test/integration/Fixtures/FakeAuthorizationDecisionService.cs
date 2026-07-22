@@ -21,7 +21,7 @@ public sealed class FakeAuthorizationDecisionService : IAuthorizationDecisionSer
     /// <summary>Full access by default, mirroring an admin's grants.</summary>
     public List<UserPermissionDto> GrantedPermissions { get; set; } =
     [
-        new() { Resource = "Products", Scopes = ["view", "manage"] },
+        new() { Resource = "Products", Scopes = ["view", "manage", "delete"] },
         new() { Resource = "ProductStats", Scopes = ["view"] },
         new() { Resource = "ProductStock", Scopes = ["manage"] },
         new() { Resource = "Audit", Scopes = ["view"] }
