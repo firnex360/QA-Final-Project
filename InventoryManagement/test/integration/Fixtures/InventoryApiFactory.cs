@@ -1,3 +1,4 @@
+using InventorySystem.Server.Authorization;
 using InventorySystem.Server.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -57,6 +58,12 @@ public class InventoryApiFactory : WebApplicationFactory<Program>, IAsyncLifetim
             })
             .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(
                 FakeAuthHandler.SchemeName, _ => { });
+
+            // Replace Keycloak policy evaluation so tests need no live authorization server.
+            services.RemoveAll(typeof(IAuthorizationDecisionService));
+            services.AddSingleton<FakeAuthorizationDecisionService>();
+            services.AddSingleton<IAuthorizationDecisionService>(
+                sp => sp.GetRequiredService<FakeAuthorizationDecisionService>());
 
             // Ensure the database schema is created
             var sp = services.BuildServiceProvider();

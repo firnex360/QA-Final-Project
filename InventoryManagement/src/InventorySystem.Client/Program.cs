@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using InventorySystem.Client;
+using InventorySystem.Client.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication.Internal;
 using ApexCharts;
@@ -21,25 +22,11 @@ builder.Services.AddOidcAuthentication(options =>
     options.UserOptions.NameClaim = "preferred_username";
 }).AddAccountClaimsPrincipalFactory<KeycloakRolesClaimsPrincipalFactory>();
 
-// Granular permission model: mirrors the server. The UI only checks permissions
-// (product:manage, stock:manage, ...) — never role names. Keycloak expands each
-// user's composite roles (adminY/managerY/staffY) into these permissions in the token.
-string[] permissions =
-[
-    "product:view",
-    "product:manage",
-    "stock:view",
-    "stock:manage",
-    "report:view",
-    "user:manage",
-    "audit:view"
-];
-
-builder.Services.AddAuthorizationCore(options =>
-{
-    foreach (var permission in permissions)
-        options.AddPolicy(permission, policy => policy.RequireRole(permission));
-});
+// No permission list here by design. What the user may do comes from Keycloak at
+// runtime via /api/permissions/me (see PermissionStore), so adding or changing a
+// permission in the Keycloak console needs no change in this project.
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<PermissionStore>();
 
 builder.Services.AddApexCharts();
 
@@ -72,7 +59,7 @@ namespace InventorySystem.Client
     /// <summary>
     /// Keycloak sends the "roles" claim as a JSON array. Blazor WASM's default
     /// claims factory keeps it as ONE claim whose value is the raw JSON string
-    /// ("[\"adminY\",\"product:view\",...]"), which breaks IsInRole/AuthorizeView.
+    /// (a raw JSON array string), which breaks IsInRole/AuthorizeView.
     /// This factory unpacks the array into one claim per role.
     /// </summary>
     internal sealed class KeycloakRolesClaimsPrincipalFactory

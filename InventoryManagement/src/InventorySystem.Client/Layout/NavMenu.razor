@@ -7,36 +7,45 @@
     </div>
 </div>
 
+@implements IDisposable
+@inject PermissionStore Permissions
+
+@* Links render from the permissions Keycloak grants at runtime — nothing here is
+   registered in code, so changing a policy in Keycloak changes this menu. *@
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="nav flex-column">
-        <AuthorizeView Policy="report:view">
+        @if (Permissions.Has("ProductStats", "view"))
+        {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                     <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
                 </NavLink>
             </div>
-        </AuthorizeView>
-        <AuthorizeView Policy="audit:view">
+        }
+        @if (Permissions.Has("Audit", "view"))
+        {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="audit">
                     <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Audit
                 </NavLink>
             </div>
-        </AuthorizeView>
-        <AuthorizeView Policy="product:manage">
+        }
+        @if (Permissions.Has("Products", "manage"))
+        {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="create">
                     <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create
                 </NavLink>
             </div>
-        </AuthorizeView>
-        <AuthorizeView Policy="product:view">
+        }
+        @if (Permissions.Has("Products", "view"))
+        {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="read">
                     <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Read
                 </NavLink>
             </div>
-        </AuthorizeView>
+        }
     </nav>
 </div>
 
@@ -44,6 +53,17 @@
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Re-render once the permissions arrive from the API.
+        Permissions.Changed += OnPermissionsChanged;
+        await Permissions.EnsureLoadedAsync();
+    }
+
+    private void OnPermissionsChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Permissions.Changed -= OnPermissionsChanged;
 
     private void ToggleNavMenu()
     {

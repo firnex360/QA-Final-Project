@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Audit.Core;
+using InventorySystem.Server.Authorization;
 using InventorySystem.Server.Data;
 using InventorySystem.Server.Models;
 using InventorySystem.Server.OpenApi;
@@ -64,22 +65,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-string[] permissions =
-[
-    "product:view",   // Ver productos
-    "product:manage", // Crear, editar y eliminar productos
-    "stock:view",     // Ver existencia e historial
-    "stock:manage",   // Registrar entradas, salidas y ajustes
-    "report:view",    // Ver reportes y dashboard
-    "user:manage",    // Gestionar usuarios, roles y permisos
-    "audit:view"      // Consultar auditoría del sistema
-];
-
-builder.Services.AddAuthorization(options =>
-{
-    foreach (var permission in permissions)
-        options.AddPolicy(permission, policy => policy.RequireRole(permission));
-});
+// Authorization is delegated to Keycloak Authorization Services: Resources (matched by
+// request URI), Scopes, Policies and Permissions all live in the Keycloak admin console.
+// PolicyEnforcementMiddleware asks Keycloak for a decision on every API request, so
+// changing who can do what needs no code change and takes effect immediately.
+builder.Services.AddAuthorization();
+builder.Services.Configure<KeycloakAuthorizationOptions>(
+    builder.Configuration.GetSection(KeycloakAuthorizationOptions.SectionName));
+builder.Services.AddHttpClient<IAuthorizationDecisionService, KeycloakDecisionService>();
 
 
 // Custom Prometheus counter: one increment per audited entity change,
@@ -172,6 +165,10 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Per-request policy evaluation against Keycloak (must run after authentication so the
+// bearer token is available, and after routing so [AllowAnonymous] metadata is visible).
+app.UseMiddleware<PolicyEnforcementMiddleware>();
 
 // Map controller endpoints
 app.MapControllers();

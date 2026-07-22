@@ -1,9 +1,9 @@
 @page "/read"
-@attribute [Authorize(Policy = "product:view")]
+@attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
-@inject AuthenticationStateProvider AuthStateProvider
+@inject PermissionStore Permissions
 
 <PageTitle>Read</PageTitle>
 
@@ -145,7 +145,7 @@ else
                     </div>
                 </div>
 
-                <!-- Quick stock in/out (stock:manage) + edit/delete (product:manage) -->
+                <!-- Actions render only for the scopes Keycloak grants this user -->
                 <div class="stock-actions">
                     @if (canManageStock)
                     {
@@ -485,17 +485,15 @@ else
         }
     }
 
-    // Permission flags from the JWT "roles" claim — Keycloak expands the user's
-    // composite role into these granular permissions. The UI never checks role names.
-    private bool canManageProducts;
-    private bool canManageStock;
+    // What the user may do comes from Keycloak (via /api/permissions/me), not from
+    // anything declared in this project. Presentation only — the API enforces the same
+    // policies, so hiding a button is convenience, not security.
+    private bool canManageProducts => Permissions.Has("Products", "manage");
+    private bool canManageStock => Permissions.Has("ProductStock", "manage");
+
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        canManageProducts = user.IsInRole("product:manage");
-        canManageStock = user.IsInRole("stock:manage");
+        await Permissions.EnsureLoadedAsync();
 
         // Load the first page and the stats in parallel — independent requests.
         await Task.WhenAll(LoadProductsAsync(currentPage), RefreshStatsAsync());
