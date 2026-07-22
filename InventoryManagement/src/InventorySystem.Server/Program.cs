@@ -28,6 +28,9 @@ builder.Services.AddScoped<IProductService, ProductService>();
 // Register IHttpContextAccessor so Audit.NET can read the current user
 builder.Services.AddHttpContextAccessor();
 
+// Register HttpClient for the AuthController to call Keycloak's token endpoint
+builder.Services.AddHttpClient();
+
 // Configure CORS to allow the Blazor client to call this API
 builder.Services.AddCors(options =>
 {
