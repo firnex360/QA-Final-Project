@@ -30,9 +30,17 @@ else
             <div class="kpi-label">Active</div>
             <div class="kpi-value">@stats.ActiveProducts</div>
         </div>
-        <div class="kpi-card @(stats.LowStockCount > 0 ? "kpi-red" : "kpi-amber")">
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-label">Inactive</div>
+            <div class="kpi-value">@stats.InactiveProducts</div>
+        </div>
+        <div class="kpi-card @(stats.LowStockCount > 0 ? "kpi-red" : "kpi-green")">
             <div class="kpi-label">Low Stock</div>
             <div class="kpi-value">@stats.LowStockCount</div>
+        </div>
+        <div class="kpi-card @(stats.OutOfStockCount > 0 ? "kpi-red" : "kpi-green")">
+            <div class="kpi-label">Out of Stock</div>
+            <div class="kpi-value">@stats.OutOfStockCount</div>
         </div>
         <div class="kpi-card kpi-purple">
             <div class="kpi-label">Inventory Value</div>
@@ -40,9 +48,9 @@ else
         </div>
     </div>
 
-    @if (stats.ByCategory.Count > 0)
-    {
-        <div class="chart-grid">
+    <div class="chart-grid">
+        @if (stats.ByCategory.Count > 0)
+        {
             <div class="chart-card">
                 <ApexChart TItem="LabelCountDto" Title="Products by Category" Height="260">
                     <ApexPointSeries TItem="LabelCountDto"
@@ -53,13 +61,95 @@ else
                                      YAggregate="@(e => e.Sum(i => (decimal)i.Count))" />
                 </ApexChart>
             </div>
+        }
+
+        @if (stockHealth.Any(s => s.Count > 0))
+        {
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Stock Health" Height="260">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stockHealth"
+                                     Name="Products"
+                                     SeriesType="SeriesType.Donut"
+                                     XValue="@(e => e.Label)"
+                                     YAggregate="@(e => e.Sum(i => (decimal)i.Count))" />
+                </ApexChart>
+            </div>
+        }
+
+        @if (stats.ValueByCategory.Count > 0)
+        {
+            <div class="chart-card">
+                <ApexChart TItem="LabelCountDto" Title="Inventory Value by Category" Height="260">
+                    <ApexPointSeries TItem="LabelCountDto"
+                                     Items="stats.ValueByCategory"
+                                     Name="Value"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => (decimal)e.Count)" />
+                </ApexChart>
+            </div>
+        }
+    </div>
+
+    <div class="table-card">
+        <div class="table-card-head">
+            <h2 class="table-card-title">⚠️ Critical Stock</h2>
+            <span class="text-muted small">Products at or below their minimum level</span>
         </div>
-    }
+        @if (stats.CriticalProducts.Count == 0)
+        {
+            <p class="text-muted mb-0 px-1 py-2">Everything is above its minimum stock level!</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table data-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th class="text-end">On hand</th>
+                            <th class="text-end">Minimum</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in stats.CriticalProducts)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.Name</td>
+                                <td><span class="badge text-bg-light border">@item.CodeSKU</span></td>
+                                <td class="text-muted">@item.Category</td>
+                                <td class="text-end fw-semibold @(item.Quantity == 0 ? "text-danger" : "text-warning")">@item.Quantity</td>
+                                <td class="text-end text-muted">@item.MinimumStockLevel</td>
+                                <td>
+                                    <span class="badge @(item.Quantity == 0 ? "text-bg-danger" : "text-bg-warning")">
+                                        @(item.Quantity == 0 ? "Out of stock" : "Low stock")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 }
 
 @code {
     private ProductStatsDto? stats;
     private string? errorMessage;
+
+    // Derived from the stat counts — a 3-way split of the catalogue by stock health.
+    // LowStockCount already includes out-of-stock items, so subtract them out.
+    private List<LabelCountDto> stockHealth => stats is null ? new() : new()
+    {
+        new LabelCountDto { Label = "Healthy",      Count = stats.TotalProducts - stats.LowStockCount },
+        new LabelCountDto { Label = "Low stock",    Count = stats.LowStockCount - stats.OutOfStockCount },
+        new LabelCountDto { Label = "Out of stock", Count = stats.OutOfStockCount }
+    };
 
     protected override async Task OnInitializedAsync()
     {

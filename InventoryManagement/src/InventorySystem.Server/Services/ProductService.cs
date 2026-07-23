@@ -89,11 +89,32 @@ public class ProductService(ApplicationDbContext context) : IProductService
             ActiveProducts = products.Count(p => p.IsActive),
             InactiveProducts = products.Count(p => !p.IsActive),
             LowStockCount = products.Count(p => p.Quantity <= p.MinimumStockLevel),
+            OutOfStockCount = products.Count(p => p.Quantity == 0),
             TotalInventoryValue = products.Sum(p => p.Price * p.Quantity),
             ByCategory = products
                 .GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "Uncategorized" : p.Category!)
                 .Select(g => new LabelCountDto { Label = g.Key, Count = g.Count() })
                 .OrderByDescending(x => x.Count)
+                .ToList(),
+            ValueByCategory = products
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "Uncategorized" : p.Category!)
+                .Select(g => new LabelCountDto { Label = g.Key, Count = (int)Math.Round(g.Sum(p => p.Price * p.Quantity)) })
+                .OrderByDescending(x => x.Count)
+                .ToList(),
+            // Most critical first: the further below its minimum, the higher it ranks.
+            CriticalProducts = products
+                .Where(p => p.Quantity <= p.MinimumStockLevel)
+                .OrderBy(p => p.Quantity - p.MinimumStockLevel)
+                .ThenBy(p => p.Quantity)
+                .Take(8)
+                .Select(p => new LowStockItemDto
+                {
+                    Name = p.Name ?? "(unnamed)",
+                    CodeSKU = p.CodeSKU,
+                    Category = p.Category,
+                    Quantity = p.Quantity,
+                    MinimumStockLevel = p.MinimumStockLevel
+                })
                 .ToList()
         };
     }
