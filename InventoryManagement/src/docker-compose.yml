@@ -82,6 +82,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
     ports:
       - "9091:9090"
     volumes:
@@ -126,10 +129,28 @@ services:
     command: [ "-config.file=/etc/tempo/tempo-config.yml" ]
     ports:
       - "3200:3200"
-      - "4317:4317"
     volumes:
       - ./monitoring/tempo-config.yml:/etc/tempo/tempo-config.yml:ro
       - tempo-data:/var/tempo
+    restart: on-failure:3
+
+  # Grafana Alloy
+  alloy:
+    image: grafana/alloy:v1.3.1
+    container_name: alloy
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "3800:3800"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:3800
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./monitoring/alloy-config.alloy:/etc/alloy/config.alloy:ro
+    depends_on:
+      - loki
+      - tempo
     restart: on-failure:3
 
 volumes:
