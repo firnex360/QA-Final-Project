@@ -1,0 +1,177 @@
+@page "/stock-movements"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject PermissionStore Permissions
+
+<PageTitle>Stock Movements</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="mb-1">Stock Movements</h1>
+        <p class="text-muted mb-0">Stock entries and exits, filtered from the audit trail — with the most sold products at a glance.</p>
+    </div>
+</div>
+
+@if (!canView)
+{
+    <div class="alert alert-warning" role="alert">
+        You don't have permission to view stock movements. Ask an administrator for the <code>audit:view</code> permission.
+    </div>
+}
+else
+{
+    @if (stats is not null)
+    {
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-label">Total Movements</div>
+                <div class="kpi-value">@stats.TotalMovements</div>
+            </div>
+            <div class="kpi-card kpi-green">
+                <div class="kpi-label">Units In</div>
+                <div class="kpi-value">@stats.TotalUnitsIn</div>
+            </div>
+            <div class="kpi-card kpi-red">
+                <div class="kpi-label">Units Out</div>
+                <div class="kpi-value">@stats.TotalUnitsOut</div>
+            </div>
+            <div class="kpi-card kpi-purple">
+                <div class="kpi-label">Last 7 Days</div>
+                <div class="kpi-value">@stats.MovementsThisWeek</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            @if (HasTypeData)
+            {
+                <div class="chart-card">
+                    <ApexChart TItem="LabelCountDto" Title="Movements by Type" Height="240">
+                        <ApexPointSeries TItem="LabelCountDto"
+                                         Items="stats.ByType"
+                                         Name="Movements"
+                                         SeriesType="SeriesType.Donut"
+                                         XValue="@(e => e.Label)"
+                                         YAggregate="@(e => e.Sum(i => (decimal)i.Count))" />
+                    </ApexChart>
+                </div>
+            }
+            @if (stats.ByDay.Count > 0)
+            {
+                <div class="chart-card">
+                    <ApexChart TItem="LabelCountDto" Title="Activity (last 7 days)" Height="240">
+                        <ApexPointSeries TItem="LabelCountDto"
+                                         Items="stats.ByDay"
+                                         Name="Movements"
+                                         SeriesType="SeriesType.Line"
+                                         XValue="@(e => e.Label)"
+                                         YValue="@(e => (decimal)e.Count)" />
+                    </ApexChart>
+                </div>
+            }
+            @if (stats.TopProducts.Count > 0)
+            {
+                <div class="chart-card">
+                    <ApexChart TItem="LabelCountDto" Title="Most Sold (units out)" Height="240">
+                        <ApexPointSeries TItem="LabelCountDto"
+                                         Items="stats.TopProducts"
+                                         Name="Units"
+                                         SeriesType="SeriesType.Bar"
+                                         XValue="@(e => e.Label)"
+                                         YValue="@(e => (decimal)e.Count)" />
+                    </ApexChart>
+                </div>
+            }
+        </div>
+    }
+
+    @if (movements is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (movements.Count == 0)
+    {
+        <p class="text-muted">No stock movements recorded yet! :)</p>
+    }
+    else
+    {
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table data-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>When (UTC)</th>
+                            <th>User</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Change</th>
+                            <th>Units</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var move in PagedMovements)
+                        {
+                            <tr>
+                                <td class="text-nowrap text-muted">@move.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@move.UserId</td>
+                                <td><span class="fw-semibold">@move.ProductName</span> <span class="text-muted">#@move.ProductId</span></td>
+                                <td><span class="badge @BadgeClass(move.Delta)">@DirectionLabel(move.Delta)</span></td>
+                                <td class="text-nowrap">
+                                    <span class="text-muted">@move.PreviousQuantity</span>
+                                    <span class="pill-arrow">→</span>
+                                    <span class="fw-semibold">@move.NewQuantity</span>
+                                </td>
+                                <td class="fw-semibold @(move.Delta < 0 ? "text-danger" : "text-success")">
+                                    @(move.Delta < 0 ? "−" : "+")@Math.Abs(move.Delta)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="pager-bar">
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
+            <span class="page-info">Page @currentPage of @TotalPages</span>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next ›</button>
+        </div>
+    }
+}
+
+@code {
+    private List<StockMovementDto>? movements;
+    private StockMovementStatsDto? stats;
+    private const int pageSize = 5;
+    private int currentPage = 1;
+
+    // These movements come from the audit trail, so the same permission gates them:
+    // presentation only — the API enforces audit:view too.
+    private bool canView => Permissions.Has(Resources.Audit, Scopes.View);
+
+    private bool HasTypeData => stats is not null && stats.ByType.Any(t => t.Count > 0);
+
+    private int TotalPages => movements is null || movements.Count == 0 ? 1 : (int)Math.Ceiling(movements.Count / (double)pageSize);
+    private IEnumerable<StockMovementDto> PagedMovements =>
+        movements is null ? Enumerable.Empty<StockMovementDto>() : movements.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!canView)
+            return;
+
+        try
+        {
+            movements = await Http.GetFromJsonAsync<List<StockMovementDto>>("api/audit/stock-movements");
+            stats = await Http.GetFromJsonAsync<StockMovementStatsDto>("api/audit/stock-movements/stats");
+        }
+        catch (Exception ex) { movements ??= new(); Console.Error.WriteLine(ex.Message); }
+    }
+
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+
+    private static string DirectionLabel(int delta) => delta < 0 ? "Stock out" : "Stock in";
+
+    private static string BadgeClass(int delta) => delta < 0 ? "text-bg-warning" : "text-bg-success";
+}
