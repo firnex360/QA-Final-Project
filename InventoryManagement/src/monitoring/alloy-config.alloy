@@ -1,0 +1,59 @@
+// ── Grafana Alloy Configuration ──────────────────────────────────────
+// Receives OTLP telemetry from .NET InventoryServer and routes:
+//   Traces  → Tempo
+//   Logs    → Loki
+//   Metrics → Prometheus (via remote-write)
+
+// ─── OTLP Receiver ──────────────────────────────────────────────────
+// Listens for incoming OTLP data from the .NET server on gRPC (:4317)
+// and HTTP (:4318).
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    logs    = [otelcol.exporter.loki.default.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+// ─── Traces Exporter → Tempo ────────────────────────────────────────
+// Forwards all trace spans to Tempo via OTLP gRPC.
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ─── Logs Exporter → Loki ───────────────────────────────────────────
+// Converts OTLP log records into Loki's native format and pushes them.
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ─── Metrics Exporter → Prometheus ──────────────────────────────────
+// Exposes OTLP metrics as a Prometheus scrape endpoint on :12345/metrics
+// so Prometheus can pull them alongside the existing /metrics from .NET.
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}

@@ -30,6 +30,7 @@ services:
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
       - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
       - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration
+      - OTLP__Endpoint=http://alloy:4317
       # Server-to-server URL for UMA policy evaluation (the API cannot reach "localhost" from its container)
       - Keycloak__InternalAuthority=http://keycloak:8080/realms/inventory-realm
       - Keycloak__Audience=inventory-api
@@ -89,6 +90,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
     ports:
       - "9091:9090"
     volumes:
@@ -113,8 +117,54 @@ services:
       - prometheus
     restart: on-failure:3
 
+  # Loki — Log Aggregation
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: loki
+    user: "0:0"
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/tmp/loki
+    restart: on-failure:3
+
+  # Tempo — Distributed Tracing
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo/tempo-config.yml" ]
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./monitoring/tempo-config.yml:/etc/tempo/tempo-config.yml:ro
+      - tempo-data:/var/tempo
+    restart: on-failure:3
+
+  # Grafana Alloy
+  alloy:
+    image: grafana/alloy:v1.3.1
+    container_name: alloy
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "3800:3800"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:3800
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./monitoring/alloy-config.alloy:/etc/alloy/config.alloy:ro
+    depends_on:
+      - loki
+      - tempo
+    restart: on-failure:3
+
 volumes:
   pgdata:
   keycloak-volume:
   prometheus-data:
   grafana-data:
+  loki-data:
+  tempo-data:
