@@ -9,6 +9,13 @@ public class LoginTests : PageTest
     private const string TestUsername = "e2e-testing";
     private const string TestPassword = "12345";
 
+    public LoginTests()
+    {
+        // To change enviroment variables (1 to show browser)
+        Environment.SetEnvironmentVariable("HEADED", "0");
+        Environment.SetEnvironmentVariable("PLAYWRIGHT_SLOWMO", "100");
+    }
+
     /// <summary>
     /// This is just a custom funciton to save ss in a specific folder for easier access. 
     /// </summary>
