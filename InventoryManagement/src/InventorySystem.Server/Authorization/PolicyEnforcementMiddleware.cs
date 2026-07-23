@@ -133,6 +133,8 @@ public sealed class PolicyEnforcementMiddleware(
     {
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { error = "forbidden", message });
+        await context.Response.WriteAsJsonAsync(
+            new { error = "forbidden", message },
+            cancellationToken: context.RequestAborted);
     }
 }
