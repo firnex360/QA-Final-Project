@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Inventory System API Tests",
-    "description": "API testing for the Inventory System.\n\nAuthentication is handled automatically: a collection-level pre-request script calls POST /api/auth/token to get a JWT, then attaches it as a Bearer header to every request.",
+    "name": "Inventory System API Tests V2",
+    "description": "Comprehensive Black-Box API testing for the Inventory System ProductController.\n\nAuthentication is handled automatically: a collection-level pre-request script calls POST /api/auth/token to get a JWT, then attaches it as a Bearer header to every request.\n\nSet 'authUsername' and 'authPassword' in collection variables to match a valid Keycloak user (default: api-test / 12345).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -43,7 +43,7 @@
           "    }",
           "}, function (err, res) {",
           "    if (err || !res || res.code !== 200) {",
-          "        console.error('Auth request failed:', err || res.text());",
+          "        console.error('Auth request failed:', err || (res ? res.text() : 'no response'));",
           "        return;",
           "    }",
           "    var json = res.json();",
@@ -67,18 +67,18 @@
           "listen": "test",
           "script": {
             "exec": [
-              "// ── Status Code Validation ──",
+              "// ── 1. Status Code Validation ──",
               "pm.test('Status code is 200', function () {",
               "    pm.response.to.have.status(200);",
               "});",
               "",
-              "// ── Content-Type / Contract Validation ──",
+              "// ── 2. Content-Type / Contract Validation ──",
               "pm.test('Response Content-Type is application/json', function () {",
               "    pm.response.to.have.header('Content-Type');",
               "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
               "});",
               "",
-              "// ── Payload Structure Validation ──",
+              "// ── 3. Payload Structure Validation ──",
               "pm.test('Response contains items array (paged response)', function () {",
               "    var jsonData = pm.response.json();",
               "    var items = Array.isArray(jsonData) ? jsonData : jsonData.items;",
@@ -108,6 +108,7 @@
               "    });",
               "});",
               "",
+              "// ── 4. Performance Threshold ──",
               "pm.test('Response time is under 2000ms', function () {",
               "    pm.expect(pm.response.responseTime).to.be.below(2000);",
               "});"
@@ -127,6 +128,279 @@
           "path": [
             "api",
             "product"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET Product By ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Status Code Validation",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// 2. OpenAPI Contract / Content-Type Validation",
+              "pm.test(\"Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// 3. Payload Structure & Field Validation",
+              "pm.test(\"Payload contains required product properties\", function () {",
+              "    var product = pm.response.json();",
+              "    ",
+              "    pm.expect(product).to.be.an(\"object\");",
+              "    pm.expect(product).to.have.property(\"id\");",
+              "    pm.expect(product).to.have.property(\"name\");",
+              "    pm.expect(product).to.have.property(\"codeSKU\");",
+              "    pm.expect(product).to.have.property(\"price\");",
+              "    pm.expect(product).to.have.property(\"quantity\");",
+              "    pm.expect(product).to.have.property(\"isActive\");",
+              "});",
+              "",
+              "// 4. Data Logic Validation",
+              "pm.test(\"Product ID matches requested ID\", function () {",
+              "    var product = pm.response.json();",
+              "    pm.expect(product.id).to.eql(4); // matches the URL ID",
+              "});",
+              "",
+              "// 5. Performance Threshold",
+              "pm.test(\"Response time is under 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/product/4",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST Create Product (Valid Data)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Status Code Validation",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// 2. Content-Type Validation",
+              "pm.test(\"Response Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// 3. Payload Structure & Dynamic Variable Saving",
+              "pm.test(\"Response contains productId and confirmation message\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property(\"productId\");",
+              "    pm.expect(jsonData).to.have.property(\"message\");",
+              "    ",
+              "    // Store created ID for subsequent tests",
+              "    pm.collectionVariables.set(\"createdProductId\", String(jsonData.productId));",
+              "});",
+              "",
+              "// 4. Performance Threshold",
+              "pm.test(\"Response time is under 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Test Product\",\n  \"codeSKU\": \"PM-TEST-999\",\n  \"description\": \"A product created via Postman API tests.\",\n  \"category\": \"Testing\",\n  \"price\": 49.99,\n  \"quantity\": 50,\n  \"minimumStockLevel\": 5,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/product",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST Create Product (Invalid Data - Negative Price)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Status Code Validation (Validation Failure)",
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// 2. Performance Threshold",
+              "pm.test(\"Response time is under 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Invalid Product\",\n  \"codeSKU\": \"INV-001\",\n  \"description\": \"Product with negative price.\",\n  \"category\": \"Testing\",\n  \"price\": -5.00,\n  \"quantity\": 10,\n  \"minimumStockLevel\": 5,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/product",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "PUT Update Product",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Status Code Validation",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// 2. Content-Type Validation",
+              "pm.test(\"Response Content-Type is application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "// 3. Payload Structure & Value Validation",
+              "pm.test(\"Product details updated correctly\", function () {",
+              "    var product = pm.response.json();",
+              "    pm.expect(product.id).to.eql(4);",
+              "    pm.expect(product.name).to.eql(\"Updated Postman Product\");",
+              "    pm.expect(product.price).to.eql(29.99);",
+              "});",
+              "",
+              "// 4. Performance Threshold",
+              "pm.test(\"Response time is under 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 4,\n  \"name\": \"Updated Postman Product\",\n  \"codeSKU\": \"PM-TEST-004\",\n  \"description\": \"Updated description via Postman test.\",\n  \"category\": \"Testing\",\n  \"price\": 29.99,\n  \"quantity\": 150,\n  \"minimumStockLevel\": 15,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/product/4",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product",
+            "4"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE Product",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. Status Code Validation",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// 2. Response Message Validation",
+              "pm.test(\"Response contains deletion confirmation message\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.include(\"deleted successfully\");",
+              "});",
+              "",
+              "// 3. Performance Threshold",
+              "pm.test(\"Response time is under 2000ms\", function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/product/{{createdProductId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "product",
+            "{{createdProductId}}"
           ]
         }
       },
@@ -156,6 +430,11 @@
     },
     {
       "key": "tokenExpiry",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "createdProductId",
       "value": "",
       "type": "string"
     }
