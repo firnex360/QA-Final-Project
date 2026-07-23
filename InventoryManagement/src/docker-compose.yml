@@ -31,6 +31,9 @@ services:
       - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
       - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration
       - OTLP__Endpoint=http://alloy:4317
+      # Server-to-server URL for UMA policy evaluation (the API cannot reach "localhost" from its container)
+      - Keycloak__InternalAuthority=http://keycloak:8080/realms/inventory-realm
+      - Keycloak__Audience=inventory-api
     ports:
       - "8090:8080"
     depends_on:
@@ -70,6 +73,11 @@ services:
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      # Pin the canonical issuer. Without this, Keycloak derives the issuer from each
+      # request's Host header, so a token minted via localhost:8080 (browser login) is
+      # rejected when the API presents it via keycloak:8080 (server-to-server UMA calls).
+      - KC_HOSTNAME=http://localhost:8080
+      - KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true
     ports:
       - "8080:8080"
     command: ["start-dev", "--import-realm"]

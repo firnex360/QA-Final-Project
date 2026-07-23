@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using InventorySystem.Client;
+using InventorySystem.Client.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication.Internal;
 using ApexCharts;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -18,22 +20,13 @@ builder.Services.AddOidcAuthentication(options =>
     options.ProviderOptions.ResponseType = "code";
     options.UserOptions.RoleClaim = "roles";
     options.UserOptions.NameClaim = "preferred_username";
-});
+}).AddAccountClaimsPrincipalFactory<KeycloakRolesClaimsPrincipalFactory>();
 
-builder.Services.AddAuthorizationCore(options =>
-{
-    options.AddPolicy("CanCreate", policy =>
-        policy.RequireRole("adminY", "managerY"));
-
-    options.AddPolicy("CanRead", policy =>
-        policy.RequireRole("adminY", "managerY", "staffY"));
-
-    options.AddPolicy("CanUpdate", policy =>
-        policy.RequireRole("adminY", "managerY"));
-
-    options.AddPolicy("CanDelete", policy =>
-        policy.RequireRole("adminY"));
-});
+// No permission list here by design. What the user may do comes from Keycloak at
+// runtime via /api/permissions/me (see PermissionStore), so adding or changing a
+// permission in the Keycloak console needs no change in this project.
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<PermissionStore>();
 
 builder.Services.AddApexCharts();
 
@@ -60,6 +53,63 @@ namespace InventorySystem.Client
         public ApiAuthorizationMessageHandler(IAccessTokenProvider provider, NavigationManager navigation)
             : base(provider, navigation)
         {
+        }
+    }
+
+    /// <summary>
+    /// Keycloak sends the "roles" claim as a JSON array. Blazor WASM's default
+    /// claims factory keeps it as ONE claim whose value is the raw JSON string
+    /// (a raw JSON array string), which breaks IsInRole/AuthorizeView.
+    /// This factory unpacks the array into one claim per role.
+    /// </summary>
+    internal sealed class KeycloakRolesClaimsPrincipalFactory
+        : AccountClaimsPrincipalFactory<RemoteUserAccount>
+    {
+        public KeycloakRolesClaimsPrincipalFactory(IAccessTokenProviderAccessor accessor)
+            : base(accessor)
+        {
+        }
+
+        public override async ValueTask<System.Security.Claims.ClaimsPrincipal> CreateUserAsync(
+            RemoteUserAccount account,
+            RemoteAuthenticationUserOptions options)
+        {
+            var user = await base.CreateUserAsync(account, options);
+
+            if (user.Identity is System.Security.Claims.ClaimsIdentity identity && identity.IsAuthenticated)
+            {
+                // Find role claims whose value is still a JSON array and split them up.
+                var packedClaims = identity.FindAll(options.RoleClaim)
+                    .Where(c => c.Value.StartsWith('['))
+                    .ToList();
+
+                foreach (var packed in packedClaims)
+                {
+                    string[]? roles;
+                    try
+                    {
+                        roles = System.Text.Json.JsonSerializer.Deserialize<string[]>(packed.Value);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        // Malformed value: leave the original claim untouched rather than
+                        // throwing, which would surface as the user being signed out.
+                        continue;
+                    }
+
+                    // Nothing usable to replace it with — keep the claim as it is.
+                    if (roles is null || roles.Length == 0)
+                        continue;
+
+                    // Only swap the packed claim out once we know the replacement is good.
+                    identity.RemoveClaim(packed);
+
+                    foreach (var role in roles.Where(r => !string.IsNullOrWhiteSpace(r)))
+                        identity.AddClaim(new System.Security.Claims.Claim(options.RoleClaim, role));
+                }
+            }
+
+            return user;
         }
     }
 }

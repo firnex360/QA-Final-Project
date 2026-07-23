@@ -6,11 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Integration.Fixtures;
 
-/// <summary>
-/// A fake authentication handler that always succeeds.
-/// By default it grants all roles (adminY, managerY, staffY) so that
-/// every [Authorize(Policy = "...")] attribute passes.
-/// </summary>
 public class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public const string SchemeName = "FakeScheme";
@@ -29,9 +24,16 @@ public class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         {
             new(ClaimTypes.Name, "integration-test-user"),
             new("preferred_username", "integration-test-user"),
+            // Composite role name (informational, not used for authorization)
             new("roles", "adminY"),
-            new("roles", "managerY"),
-            new("roles", "staffY"),
+            // Granular permissions — what Keycloak expands the composite into
+            new("roles", "product:view"),
+            new("roles", "product:manage"),
+            new("roles", "stock:view"),
+            new("roles", "stock:manage"),
+            new("roles", "report:view"),
+            new("roles", "user:manage"),
+            new("roles", "audit:view"),
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName, "preferred_username", "roles");
