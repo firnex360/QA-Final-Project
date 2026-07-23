@@ -23,7 +23,7 @@ public class ProductsCrudTests : PageTest
     private static string GetScreenshotPath(string fileName)
     {
         var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../"));
-        var targetDir = Path.Combine(projectDir, "test-results");
+        var targetDir = Path.Combine(projectDir, "CRUD-test-results");
         Directory.CreateDirectory(targetDir);
         return Path.Combine(targetDir, fileName);
     }
