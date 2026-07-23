@@ -13,7 +13,7 @@ public class LoginTests : PageTest
     {
         // To change enviroment variables (1 to show browser)
         Environment.SetEnvironmentVariable("HEADED", "0");
-        Environment.SetEnvironmentVariable("PLAYWRIGHT_SLOWMO", "100");
+        //Environment.SetEnvironmentVariable("SLOWMO", "100");
     }
 
     /// <summary>
