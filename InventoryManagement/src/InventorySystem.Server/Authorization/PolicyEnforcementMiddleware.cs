@@ -46,7 +46,7 @@ public sealed class PolicyEnforcementMiddleware(
 
         // Present on every real request; empty only under test authentication schemes.
         var token = ExtractBearerToken(context) ?? string.Empty;
-        var path = context.Request.Path.Value ?? "/";
+        var path = (context.Request.Path.Value ?? "/").ToLowerInvariant();
         var scope = ScopeForRequest(context);
 
         var decision = await decisions.EvaluateAsync(token, path, scope, context.RequestAborted);
