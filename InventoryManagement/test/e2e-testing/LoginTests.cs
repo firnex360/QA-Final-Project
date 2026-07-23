@@ -10,6 +10,17 @@ public class LoginTests : PageTest
     private const string TestPassword = "12345";
 
     /// <summary>
+    /// This is just a custom funciton to save ss in a specific folder for easier access. 
+    /// </summary>
+    private static string GetScreenshotPath(string fileName)
+    {
+        var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../"));
+        var targetDir = Path.Combine(projectDir, "login-test-results");
+        Directory.CreateDirectory(targetDir);
+        return Path.Combine(targetDir, fileName);
+    }
+
+    /// <summary>
     /// Test 1: An unauthenticated user visiting the app sees the "Access Denied" alert.
     /// </summary>
     [Fact]
@@ -22,7 +33,7 @@ public class LoginTests : PageTest
         await Expect(accessDeniedAlert).ToContainTextAsync("Access Denied");
         await Expect(accessDeniedAlert).ToContainTextAsync("Click here to login");
 
-        await Page.ScreenshotAsync(new() { Path = "test-results/01-access-denied.png" });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("01-access-denied.png") });
     }
 
     /// <summary>
@@ -44,7 +55,7 @@ public class LoginTests : PageTest
         await Expect(usernameField).ToBeVisibleAsync();
         await Expect(passwordField).ToBeVisibleAsync();
 
-        await Page.ScreenshotAsync(new() { Path = "test-results/02-keycloak-login-form.png" });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("02-keycloak-login-form.png") });
     }
 
     /// <summary>
@@ -64,7 +75,7 @@ public class LoginTests : PageTest
         await Page.Locator("#username").FillAsync(TestUsername);
         await Page.Locator("#password").FillAsync(TestPassword);
 
-        await Page.ScreenshotAsync(new() { Path = "test-results/03-credentials-filled.png" });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("03-credentials-filled.png") });
 
         await Page.Locator("#kc-login").ClickAsync();
 
@@ -76,6 +87,6 @@ public class LoginTests : PageTest
         var greeting = Page.GetByText($"Hello, {TestUsername}!");
         await Expect(greeting).ToBeVisibleAsync(new() { Timeout = 10000 });
 
-        await Page.ScreenshotAsync(new() { Path = "test-results/04-authenticated-dashboard.png" });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("04-authenticated-dashboard.png") });
     }
 }
