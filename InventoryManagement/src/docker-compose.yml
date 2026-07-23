@@ -86,18 +86,35 @@ services:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     restart: on-failure:3
 
-  # Prometheus — scrapes the API's /metrics endpoint
+  # Prometheus — scrapes the API's /metrics endpoint, evaluates alert rules
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.enable-remote-write-receiver"
+      - "--web.listen-address=:3300"
     ports:
-      - "9091:9090"
+      - "3300:3300"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus-data:/prometheus
+    depends_on:
+      - alertmanager
+    restart: on-failure:3
+
+  # Alertmanager — receives and groups alerts fired by Prometheus
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager-config.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
     restart: on-failure:3
 
   # Grafana — dashboards over Prometheus (datasource + dashboard auto-provisioned)
@@ -168,3 +185,4 @@ volumes:
   grafana-data:
   loki-data:
   tempo-data:
+  alertmanager-data:

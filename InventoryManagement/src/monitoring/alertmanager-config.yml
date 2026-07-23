@@ -1,0 +1,22 @@
+# Alertmanager configuration.
+# Alerts fired by Prometheus land here, get grouped, and are shown in the
+# Alertmanager UI (http://localhost:9093). No external notifier is configured
+# by default so the stack sends nothing off-box; add an email/Slack/webhook
+# receiver below and point the route at it when you want notifications.
+route:
+  receiver: default
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+
+receivers:
+  - name: default
+    # Intentionally empty: alerts are visible in the Alertmanager UI. To send
+    # notifications, add e.g. a webhook_configs / email_configs block here.
+
+inhibit_rules:
+  # A critical alert for a target silences lower-severity noise from the same alert.
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: ['alertname']

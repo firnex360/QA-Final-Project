@@ -1,0 +1,52 @@
+groups:
+  - name: inventory-api-alerts
+    rules:
+      # ── Servicios caídos ────────────────────────────────────────────
+      - alert: ApiServiceDown
+        expr: up{job="inventory-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Inventory API is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} — the API has been unreachable for over a minute."
+
+      # ── Error rate elevado ──────────────────────────────────────────
+      - alert: HighErrorRate
+        expr: sum(rate(http_request_duration_seconds_count{code=~"5.."}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate"
+          description: "More than 5% of requests are returning 5xx over the last 5 minutes (currently {{ $value | humanizePercentage }})."
+
+      # ── Latencia alta ───────────────────────────────────────────────
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency (p95)"
+          description: "p95 request latency has been above 1s for 5 minutes (currently {{ $value | humanizeDuration }})."
+
+      # ── Alto consumo CPU ────────────────────────────────────────────
+      - alert: HighCpuUsage
+        expr: sum(rate(dotnet_process_cpu_time_seconds_total[5m])) / max(dotnet_process_cpu_count) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU utilisation has been above 85% for 5 minutes (currently {{ $value | printf \"%.0f\" }}%)."
+
+      # ── Fallos de autenticación / autorización ──────────────────────
+      - alert: AuthFailureSpike
+        expr: sum(rate(http_request_duration_seconds_count{code=~"401|403"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spike in auth failures"
+          description: "The API is returning more than 1 unauthorized/forbidden response per second over 5 minutes (currently {{ $value | printf \"%.2f\" }}/s)."

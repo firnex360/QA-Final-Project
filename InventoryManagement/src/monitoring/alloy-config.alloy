@@ -46,14 +46,23 @@ loki.write "default" {
 }
 
 // ─── Metrics Exporter → Prometheus ──────────────────────────────────
-// Exposes OTLP metrics as a Prometheus scrape endpoint on :12345/metrics
-// so Prometheus can pull them alongside the existing /metrics from .NET.
+// OTLP metrics pushed by the .NET server are converted to Prometheus format
+// and remote-written to Prometheus.
 otelcol.exporter.prometheus "default" {
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
+prometheus.scrape "inventory_api" {
+  targets = [
+    { __address__ = "server:8080", job = "inventory-api" },
+  ]
+  metrics_path    = "/metrics"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.default.receiver]
+}
+
 prometheus.remote_write "default" {
   endpoint {
-    url = "http://prometheus:9090/api/v1/write"
+    url = "http://prometheus:3300/api/v1/write"
   }
 }

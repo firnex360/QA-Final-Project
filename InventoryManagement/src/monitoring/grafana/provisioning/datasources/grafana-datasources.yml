@@ -1,10 +1,47 @@
 apiVersion: 1
 
 datasources:
+  # ── Metrics ──────────────────────────────────────────────────────────
   - name: Prometheus
     uid: prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: http://prometheus:3300
     isDefault: true
     editable: true
+
+  # ── Traces ───────────────────────────────────────────────────────────
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      # Jump from a trace span straight to its logs in Loki, matched on trace_id.
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        spanStartTimeShift: -1h
+        spanEndTimeShift: 1h
+      # Jump from a trace span to the request-rate metric in Prometheus.
+      tracesToMetrics:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+
+  # ── Logs ─────────────────────────────────────────────────────────────
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      # Turn the trace_id in a log line into a clickable link into Tempo.
+      derivedFields:
+        - name: TraceID
+          matcherType: label
+          matcherRegex: trace_id
+          url: '$${__value.raw}'
+          datasourceUid: tempo
