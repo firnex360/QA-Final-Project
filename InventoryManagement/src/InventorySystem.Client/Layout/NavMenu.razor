@@ -25,16 +25,13 @@
         @if (Permissions.Has(Resources.Audit, Scopes.View))
         {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="audit">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Audit
+                <NavLink class="nav-link" href="stock-movements">
+                    <span class="bi bi-arrow-down-up-nav-menu" aria-hidden="true"></span> Stock Movements
                 </NavLink>
             </div>
-        }
-        @if (Permissions.Has(Resources.Products, Scopes.Manage))
-        {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="create">
-                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create
+                <NavLink class="nav-link" href="audit">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Audit
                 </NavLink>
             </div>
         }
@@ -42,7 +39,7 @@
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="read">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Read
+                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Read
                 </NavLink>
             </div>
         }

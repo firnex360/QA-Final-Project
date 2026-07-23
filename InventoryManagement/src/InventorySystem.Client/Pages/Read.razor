@@ -120,7 +120,9 @@ else
     <div class="product-grid">
         @foreach (var product in products)
         {
-            <div class="product-card @StockStateClass(product)">
+            <div class="product-card product-card-clickable @StockStateClass(product)"
+                 @onclick="() => OpenDetails(product)" role="button" tabindex="0"
+                 title="Click to see full details">
                 <div class="product-card-head">
                     <div class="product-name" title="@product.Name">@product.Name</div>
                     <span class="stock-badge @StockStateClass(product)">@StockStateLabel(product)</span>
@@ -146,7 +148,8 @@ else
                 </div>
 
                 <!-- Actions render only for the scopes Keycloak grants this user -->
-                <div class="stock-actions">
+                <!-- stopPropagation so using these controls doesn't also open the details popup -->
+                <div class="stock-actions" @onclick:stopPropagation="true">
                     @if (canManageStock)
                     {
                         <button class="btn stock-btn stock-out" title="Stock out"
@@ -171,7 +174,7 @@ else
 
                 @if (adjustProductId == product.Id)
                 {
-                    <div class="stock-adjust-panel">
+                    <div class="stock-adjust-panel" @onclick:stopPropagation="true">
                         <div class="stock-adjust-title">
                             @(adjustIsStockIn ? "📦 Stock in" : "📤 Stock out") — how many?
                         </div>
@@ -199,12 +202,76 @@ else
     </div>
 }
 
+@* Read-only details popup — a quick way to see the full product info without opening Edit. *@
+@if (detailsProduct is not null)
+{
+    <div class="product-modal-backdrop" @onclick="CloseDetails">
+        <div class="product-modal @StockStateClass(detailsProduct)" @onclick:stopPropagation="true"
+             role="dialog" aria-modal="true" aria-label="Product details">
+            <button class="product-modal-close" @onclick="CloseDetails" aria-label="Close">×</button>
+
+            <div class="product-modal-head">
+                <h2 class="product-modal-title">@detailsProduct.Name</h2>
+                <span class="stock-badge @StockStateClass(detailsProduct)">@StockStateLabel(detailsProduct)</span>
+            </div>
+
+            <div class="product-meta mb-3">
+                <span class="badge text-bg-light border">@detailsProduct.CodeSKU</span>
+                <span class="product-category">@detailsProduct.Category</span>
+                <span class="badge @(detailsProduct.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                    @(detailsProduct.IsActive ? "Active" : "Inactive")
+                </span>
+            </div>
+
+            <div class="product-modal-section">
+                <div class="product-modal-label">Description</div>
+                <p class="product-modal-desc">
+                    @(string.IsNullOrWhiteSpace(detailsProduct.Description) ? "—" : detailsProduct.Description)
+                </p>
+            </div>
+
+            <div class="product-modal-grid">
+                <div class="product-modal-stat">
+                    <div class="product-modal-label">Price</div>
+                    <div class="product-modal-stat-value">@detailsProduct.Price.ToString("C")</div>
+                </div>
+                <div class="product-modal-stat">
+                    <div class="product-modal-label">On hand</div>
+                    <div class="product-modal-stat-value">@detailsProduct.Quantity</div>
+                </div>
+                <div class="product-modal-stat">
+                    <div class="product-modal-label">Minimum stock</div>
+                    <div class="product-modal-stat-value">@detailsProduct.MinimumStockLevel</div>
+                </div>
+                <div class="product-modal-stat">
+                    <div class="product-modal-label">Stock value</div>
+                    <div class="product-modal-stat-value">@((detailsProduct.Price * detailsProduct.Quantity).ToString("C"))</div>
+                </div>
+            </div>
+
+            <div class="product-modal-footer">
+                @if (canManageProducts)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => EditProduct(detailsProduct)">Edit</button>
+                }
+                <button class="btn btn-primary btn-sm" @onclick="CloseDetails">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
 @if (!string.IsNullOrEmpty(toastMessage))
 {
     <div class="stock-toast" role="status">@toastMessage</div>
 }
 
 @code {
+
+    // Product shown in the read-only details popup (null = closed).
+    private Product? detailsProduct;
+    private void OpenDetails(Product product) => detailsProduct = product;
+    private void CloseDetails() => detailsProduct = null;
+
 
     private List<Product>? products;
     private string errorMessage = string.Empty;
