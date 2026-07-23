@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+
+# Alert rules evaluated on every scrape interval.
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
+# Send firing alerts to Alertmanager (compose service name).
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs: []

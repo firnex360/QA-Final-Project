@@ -104,6 +104,9 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
+        // Npgsql publishes connection-pool metrics (db.client.connections.*) under this
+        // meter — surfaces the required "Database pool" figures in Prometheus/Grafana.
+        .AddMeter("Npgsql")
         .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(builder.Configuration["OTLP:Endpoint"] ?? "http://localhost:4317");
