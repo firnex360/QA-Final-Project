@@ -9,15 +9,12 @@ public class ProductsCrudTests : PageTest
     private const string TestUsername = "e2e-testing";
     private const string TestPassword = "12345";
 
-    private const string SkuCode = "PW-CRUD-99";
-    private const string ProductName = "Playwright CRUD Item";
-
     public ProductsCrudTests()
     {
         // To change enviroment variables (1 to show browser)
         Environment.SetEnvironmentVariable("HEADED", "0");
         //Environment.SetEnvironmentVariable("SLOWMO", "100");
-    }
+    }   
 
     /// <summary>
     /// Helper to save screenshots directly in 'test/e2e-testing/test-results/'
@@ -26,13 +23,13 @@ public class ProductsCrudTests : PageTest
     private static string GetScreenshotPath(string fileName)
     {
         var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../"));
-        var targetDir = Path.Combine(projectDir, "CRUD-test-results");
+        var targetDir = Path.Combine(projectDir, "test-results");
         Directory.CreateDirectory(targetDir);
         return Path.Combine(targetDir, fileName);
     }
 
     /// <summary>
-    /// Helper method to log in via Keycloak before each test.
+    /// Helper method to log in via Keycloak before test execution.
     /// </summary>
     private async Task LoginAsync()
     {
@@ -54,138 +51,96 @@ public class ProductsCrudTests : PageTest
     }
 
     /// <summary>
-    /// Test 1: Create a new product and verify it appears in the list.
+    /// Complete E2E Lifecycle Test:
+    ///   1. Create Product (Form entry & submission)
+    ///   2. Read Product (Search & verify in card list)
+    ///   3. Update Product (Edit price/quantity & verify changes)
+    ///   4. Delete Product (Confirm dialog & verify removal)
     /// </summary>
     [Fact]
-    public async Task CreateProduct_AppearsInList()
+    public async Task FullProductLifecycle_CreateReadUpdateDelete()
     {
+        // Generate a unique SKU code per test run to prevent strict mode violations from leftover DB data
+        var skuCode = $"PW-CRUD-{Random.Shared.Next(1000, 9999)}";
+        var productName = $"Playwright CRUD {skuCode}";
+
         await LoginAsync();
 
-        // Navigate to Create Product page
+        // Step 1: CREATE
         await Page.GotoAsync($"{BaseUrl}/create");
 
-        // Wait for form
         var nameInput = Page.Locator("input[placeholder='Enter product name...']");
         await Expect(nameInput).ToBeVisibleAsync(new() { Timeout = 15000 });
 
-        // Fill out product form
-        await nameInput.FillAsync(ProductName);
-        await Page.Locator("input[placeholder='Enter SKU...']").FillAsync(SkuCode);
+        await nameInput.FillAsync(productName);
+        await Page.Locator("input[placeholder='Enter SKU...']").FillAsync(skuCode);
         await Page.Locator("textarea[placeholder='Enter description...']").FillAsync("Item created by Playwright E2E CRUD test");
-
-        // Select category
         await Page.Locator("select.form-control").SelectOptionAsync(new[] { "Electronics" });
-
         await Page.Locator("input[placeholder='Enter price...']").FillAsync("99.99");
         await Page.Locator("input[placeholder='Enter quantity...']").FillAsync("50");
         await Page.Locator("input[placeholder='Enter minimum stock level...']").FillAsync("5");
 
-        // Submit form
         await Page.Locator("button:has-text('Create Product!')").ClickAsync();
 
-        // Assert success message is displayed
         var successAlert = Page.Locator("div.alert-success");
         await Expect(successAlert).ToBeVisibleAsync(new() { Timeout = 15000 });
         await Expect(successAlert).ToContainTextAsync("Product created successfully");
 
         await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("05-product-created.png") });
 
-        // Navigate to Read page to verify product exists in product cards
+        // Step 2: READ / SEARCH 
         await Page.GotoAsync($"{BaseUrl}/read");
         var searchInput = Page.Locator("input[aria-label='Search products']");
         await Expect(searchInput).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await searchInput.FillAsync(SkuCode);
+        await searchInput.FillAsync(skuCode);
 
-        // Verify product name and SKU appear in product card
-        var productCard = Page.Locator(".product-card", new() { HasTextString = SkuCode });
+        var productCard = Page.Locator(".product-card", new() { HasTextString = skuCode }).First;
         await Expect(productCard).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await Expect(productCard).ToContainTextAsync(ProductName);
-    }
+        await Expect(productCard).ToContainTextAsync(productName);
 
-    /// <summary>
-    /// Test 2: Edit the created product's price and quantity and verify updates.
-    /// </summary>
-    [Fact]
-    public async Task EditProduct_UpdatesValues()
-    {
-        await LoginAsync();
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("06-product-found-in-list.png") });
 
-        // Go to Read page and search for created product
-        await Page.GotoAsync($"{BaseUrl}/read");
-        var searchInput = Page.Locator("input[aria-label='Search products']");
-        await Expect(searchInput).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await searchInput.FillAsync(SkuCode);
-
-        var productCard = Page.Locator(".product-card", new() { HasTextString = SkuCode });
-        await Expect(productCard).ToBeVisibleAsync(new() { Timeout = 15000 });
-
-        // Click Edit button for this product
+        //  Step 3: UPDATE / EDIT 
         var editButton = productCard.Locator("button:has-text('Edit')");
         await editButton.ClickAsync();
 
-        // Assert redirect to Edit page
         await Page.WaitForURLAsync($"{BaseUrl}/edit/**", new() { Timeout = 15000 });
 
-        // Wait for price input
         var priceInput = Page.Locator("input[type='number']").First;
         await Expect(priceInput).ToBeVisibleAsync(new() { Timeout = 15000 });
 
-        // Update Price to 149.99 and Quantity to 75
         await priceInput.FillAsync("149.99");
         var quantityInput = Page.Locator("input[type='number']").Nth(1);
         await quantityInput.FillAsync("75");
 
-        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("06-product-editing.png") });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("07-product-editing.png") });
 
-        // Click Save Changes button
         await Page.Locator("button:has-text('Save Changes')").ClickAsync();
 
-        // Assert redirect back to Read page
         await Page.WaitForURLAsync($"{BaseUrl}/read", new() { Timeout = 15000 });
 
-        // Search again to verify updated values
         var searchInputAfterEdit = Page.Locator("input[aria-label='Search products']");
         await Expect(searchInputAfterEdit).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await searchInputAfterEdit.FillAsync(SkuCode);
+        await searchInputAfterEdit.FillAsync(skuCode);
 
-        var updatedCard = Page.Locator(".product-card", new() { HasTextString = SkuCode });
+        var updatedCard = Page.Locator(".product-card", new() { HasTextString = skuCode }).First;
         await Expect(updatedCard).ToBeVisibleAsync(new() { Timeout = 15000 });
         await Expect(updatedCard).ToContainTextAsync("149.99");
         await Expect(updatedCard).ToContainTextAsync("75");
 
-        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("07-product-edited.png") });
-    }
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("08-product-edited.png") });
 
-    /// <summary>
-    /// Test 3: Delete the product, accept confirmation dialog, and verify removal.
-    /// </summary>
-    [Fact]
-    public async Task DeleteProduct_RemovesFromList()
-    {
-        await LoginAsync();
-
-        // Go to Read page and search for product
-        await Page.GotoAsync($"{BaseUrl}/read");
-        var searchInput = Page.Locator("input[aria-label='Search products']");
-        await Expect(searchInput).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await searchInput.FillAsync(SkuCode);
-
-        var productCard = Page.Locator(".product-card", new() { HasTextString = SkuCode });
-        await Expect(productCard).ToBeVisibleAsync(new() { Timeout = 15000 });
-
-        // Set up automatic dialog handler for JS confirm window
+        // Step 4: DELETE 
         Page.Dialog += async (_, dialog) =>
         {
             await dialog.AcceptAsync();
         };
 
-        // Click Delete button
-        var deleteButton = productCard.Locator("button:has-text('Delete')");
+        var deleteButton = updatedCard.Locator("button:has-text('Delete')");
         await deleteButton.ClickAsync();
 
-        // Assert card is removed from view
-        await Expect(productCard).Not.ToBeVisibleAsync(new() { Timeout = 15000 });
+        await Expect(updatedCard).Not.ToBeVisibleAsync(new() { Timeout = 15000 });
 
-        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("08-product-deleted.png") });
+        await Page.ScreenshotAsync(new() { Path = GetScreenshotPath("09-product-deleted.png") });
     }
 }
