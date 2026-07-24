@@ -22,11 +22,11 @@ RUN mkdir -p /etc/apt/keyrings \
 
 # Install .NET 10 SDK
 RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir /usr/share/dotnet \
-    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet
 
 # Set environment variables for .NET & Global Tools
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="${PATH}:/usr/share/dotnet:/var/jenkins_home/.dotnet/tools"
 
 USER jenkins
-
