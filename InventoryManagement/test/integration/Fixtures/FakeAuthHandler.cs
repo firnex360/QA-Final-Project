@@ -20,6 +20,20 @@ public class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        if (Request.Headers.ContainsKey("X-Test-Unauthenticated"))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        if (Request.Headers.TryGetValue("Authorization", out var authHeader))
+        {
+            var token = authHeader.ToString().Trim();
+            if (token == "Bearer" || token == "Bearer invalid" || token == "Bearer expired" || token == "none")
+            {
+                return Task.FromResult(AuthenticateResult.Fail("Invalid token"));
+            }
+        }
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, "integration-test-user"),
