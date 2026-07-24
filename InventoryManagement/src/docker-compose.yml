@@ -178,6 +178,21 @@ services:
       - tempo
     restart: on-failure:3
 
+  # Jenkins CI/CD Automation Server
+  jenkins:
+    build:
+      context: .
+      dockerfile: jenkins/Dockerfile
+    container_name: jenkins
+    user: root
+    ports:
+      - "8085:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: on-failure:3
+
 volumes:
   pgdata:
   keycloak-volume:
@@ -186,3 +201,4 @@ volumes:
   loki-data:
   tempo-data:
   alertmanager-data:
+  jenkins-data:
