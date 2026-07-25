@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOTNET = '/usr/share/dotnet/dotnet'
-        DOTNET_ROOT = '/usr/share/dotnet'
+        DOTNET = 'dotnet' // Simplified since we mapped /usr/bin/dotnet globally in the Jenkins Dockerfile
         DOTNET_CLI_TELEMETRY_OPTOUT = '1'
         TESTCONTAINERS_RYUK_DISABLED = 'true'
         TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = '/var/run/docker.sock'
@@ -17,13 +16,10 @@ pipeline {
         // 0. VERIFY TOOLS
         stage('Verify Tools') {
             steps {
-                echo 'Verifying .NET SDK installation...'
-                sh 'ls -la /usr/share/dotnet/dotnet || echo ".NET NOT FOUND at /usr/share/dotnet"'
-                sh 'ls -la /usr/bin/dotnet || echo ".NET NOT FOUND at /usr/bin"'
-                sh 'ls -la /usr/local/bin/dotnet || echo ".NET NOT FOUND at /usr/local/bin"'
-                sh 'which dotnet || echo "dotnet NOT on PATH"'
-                sh 'echo "PATH is: $PATH"'
-                sh '${DOTNET} --version || echo ".NET execution failed"'
+                echo 'Verifying .NET SDK and Docker installations...'
+                sh 'dotnet --version || echo ".NET execution failed"'
+                sh 'docker --version || echo "Docker CLI not found"'
+                sh 'node --version || echo "Node.js not found"'
             }
         }
 
@@ -64,9 +60,11 @@ pipeline {
             steps {
                 script {
                     if (fileExists('InventoryManagement/test/api-testing/PostmanCollection.json')) {
-                        echo 'Building Keycloak image & ensuring server containers are running...'
+                        echo 'Building images & ensuring server containers are running...'
                         sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                         sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
+                        
+                        // Start only core dependencies for API testing
                         sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server'
                         
                         echo 'Waiting for Keycloak to be ready...'
@@ -138,7 +136,7 @@ pipeline {
                     sh '''
                         ${DOTNET} tool install --global dotnet-sonarscanner || true
                         ${DOTNET} tool install --global dotnet-coverage || true
-                        export PATH="$PATH:/var/jenkins_home/.dotnet/tools"
+                        # PATH is already configured correctly via the Jenkins Dockerfile
                         dotnet-sonarscanner begin /k:"${SONAR_PROJECT_KEY}" /o:"${SONAR_ORGANIZATION}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
                         ${DOTNET} build InventoryManagement.slnx --no-incremental
                         dotnet-coverage collect "${DOTNET} test InventoryManagement.slnx --no-build" -f xml -o "coverage.xml"
@@ -161,8 +159,9 @@ pipeline {
         // 10. DEPLOYMENT
         stage('Deployment') {
             steps {
-                echo 'Deploying Updated Containers via Docker Compose...'
-                sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build'
+                echo 'Deploying Updated Core Containers via Docker Compose...'
+                // Spin up the primary stack. Excludes 'monitoring' profile which breaks in DooD relative mounts.
+                sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server client'
             }
         }
     }
@@ -170,6 +169,8 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution complete.'
+            // Optional: If you want ephemeral tests, uncomment the line below to tear down containers after build.
+            // sh 'docker compose -f InventoryManagement/src/docker-compose.yml down'
         }
         success {
             echo 'Pipeline succeeded! All 10 stages executed cleanly.'

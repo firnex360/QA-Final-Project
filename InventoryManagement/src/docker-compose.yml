@@ -61,7 +61,8 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      # Use wget instead of curl since Alpine nginx images do not have curl installed
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -94,6 +95,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
+    profiles: ["monitoring"]
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.enable-remote-write-receiver"
@@ -112,6 +114,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: alertmanager
+    profiles: ["monitoring"]
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
     ports:
@@ -125,6 +128,7 @@ services:
   grafana:
     image: grafana/grafana:11.2.0
     container_name: grafana
+    profiles: ["monitoring"]
     ports:
       - "3000:3000"
     environment:
@@ -142,6 +146,7 @@ services:
   loki:
     image: grafana/loki:3.1.0
     container_name: loki
+    profiles: ["monitoring"]
     user: "0:0"
     ports:
       - "3100:3100"
@@ -155,6 +160,7 @@ services:
   tempo:
     image: grafana/tempo:2.5.0
     container_name: tempo
+    profiles: ["monitoring"]
     command: [ "-config.file=/etc/tempo/tempo-config.yml" ]
     ports:
       - "3200:3200"
@@ -167,6 +173,7 @@ services:
   alloy:
     image: grafana/alloy:v1.3.1
     container_name: alloy
+    profiles: ["monitoring"]
     ports:
       - "4317:4317"
       - "4318:4318"
