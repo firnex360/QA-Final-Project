@@ -64,8 +64,8 @@ pipeline {
                         sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                         sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
                         
-                        // Start only core dependencies for API testing
-                        sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server'
+                        // FIX: CD into the directory to avoid the -f flag parsing error
+                        sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server'
                         
                         echo 'Waiting for Keycloak to be ready...'
                         sh '''
@@ -160,8 +160,8 @@ pipeline {
         stage('Deployment') {
             steps {
                 echo 'Deploying Updated Core Containers via Docker Compose...'
-                // Spin up the primary stack. Excludes 'monitoring' profile which breaks in DooD relative mounts.
-                sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server client'
+                // FIX: CD into the directory to avoid the -f flag parsing error
+                sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server client'
             }
         }
     }
