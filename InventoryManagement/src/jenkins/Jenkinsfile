@@ -108,6 +108,25 @@ pipeline {
             }
         }
 
+        // 6. E2E TESTS
+        stage('E2E Tests') {
+            steps {
+                script {
+                    if (fileExists('InventoryManagement/test/e2e-testing/e2e-testing.csproj')) {
+                        echo 'Installing Playwright Browsers...'
+                        sh '${DOTNET} tool install --global Microsoft.Playwright.CLI || true'
+                        sh 'cd InventoryManagement/test/e2e-testing && ~/.dotnet/tools/playwright install --with-deps chromium'
+                        
+                        echo 'Running E2E Tests with Playwright...'
+                        // Run with E2E_BASE_URL pointing to the host where client is published
+                        sh 'E2E_BASE_URL="http://host.docker.internal:9090" ${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
+                    } else {
+                        echo 'Skipping E2E Tests: e2e-testing project not found yet.'
+                    }
+                }
+            }
+        }
+
 
 
         // 7. SECURITY SCAN
