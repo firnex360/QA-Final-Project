@@ -126,7 +126,7 @@ pipeline {
                     sh '''
                         ${DOTNET} tool install --global dotnet-sonarscanner || true
                         ${DOTNET} tool install --global dotnet-coverage || true
-                        # PATH is already configured correctly via the Jenkins Dockerfile
+                        export PATH="$PATH:/root/.dotnet/tools"
                         dotnet-sonarscanner begin /k:"${SONAR_PROJECT_KEY}" /o:"${SONAR_ORGANIZATION}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
                         ${DOTNET} build InventoryManagement.slnx --no-incremental
                         dotnet-coverage collect "${DOTNET} test InventoryManagement.slnx --no-build" -f xml -o "coverage.xml"
