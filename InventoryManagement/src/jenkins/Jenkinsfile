@@ -5,6 +5,8 @@ pipeline {
         DOTNET = '/usr/share/dotnet/dotnet'
         DOTNET_ROOT = '/usr/share/dotnet'
         DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        TESTCONTAINERS_RYUK_DISABLED = 'true'
+        TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = '/var/run/docker.sock'
         SONAR_HOST_URL = 'https://sonarcloud.io'
         SONAR_ORGANIZATION = 'firnex360'
         SONAR_PROJECT_KEY = 'firnex360_QA-Final-Project'
