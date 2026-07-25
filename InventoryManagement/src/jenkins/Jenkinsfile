@@ -64,8 +64,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('InventoryManagement/test/api-testing/PostmanCollection.json')) {
+                        echo 'Ensuring server containers are running for API testing...'
+                        sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d db keycloak server'
                         echo 'Running API Tests with Postman / Newman...'
-                        sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json'
+                        sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json --insecure'
                     } else {
                         echo 'Skipping API Tests: PostmanCollection.json not found yet.'
                     }

@@ -24,6 +24,11 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get update && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
+# 3. Install Node.js (for Newman / Postman API testing)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # 3. Copy .NET 10 SDK directly from Microsoft's official image (no download needed)
 COPY --from=mcr.microsoft.com/dotnet/sdk:10.0 /usr/share/dotnet /usr/share/dotnet
 RUN ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet \
