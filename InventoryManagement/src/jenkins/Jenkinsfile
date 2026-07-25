@@ -111,6 +111,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('InventoryManagement/test/e2e-testing/e2e-testing.csproj')) {
+                        echo 'Installing Playwright Browsers...'
+                        sh '${DOTNET} tool install --global Microsoft.Playwright.CLI || true'
+                        sh 'playwright install --with-deps chromium'
+                        
                         echo 'Running E2E Tests with Playwright...'
                         sh '${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
                     } else {
