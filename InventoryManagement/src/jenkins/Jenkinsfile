@@ -60,6 +60,11 @@ pipeline {
             steps {
                 script {
                     if (fileExists('InventoryManagement/test/api-testing/PostmanCollection.json')) {
+                        echo 'Adapting configuration for CI environment (routing localhost to host.docker.internal)...'
+                        sh "sed -i 's/localhost/host.docker.internal/g' InventoryManagement/src/InventorySystem.Client/wwwroot/appsettings.json"
+                        sh "sed -i 's|Keycloak__Authority=http://localhost:8080|Keycloak__Authority=http://host.docker.internal:8080|g' InventoryManagement/src/docker-compose.yml"
+                        sh "sed -i 's|KC_HOSTNAME=http://localhost:8080|KC_HOSTNAME=http://host.docker.internal:8080|g' InventoryManagement/src/docker-compose.yml"
+
                         echo 'Building images & ensuring server containers are running...'
                         sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                         sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
