@@ -63,9 +63,11 @@ pipeline {
                         echo 'Building images & ensuring server containers are running...'
                         sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                         sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
+                        sh 'docker build -t inventory-client:latest -f InventoryManagement/src/InventorySystem.Client/Dockerfile InventoryManagement/src'
                         
                         // FIX: CD into the directory to avoid the -f flag parsing error
-                        sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server'
+                        // Bring up client as well, because E2E tests need it.
+                        sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server client'
                         
                         echo 'Waiting for Keycloak to be ready...'
                         sh '''
@@ -113,10 +115,11 @@ pipeline {
                     if (fileExists('InventoryManagement/test/e2e-testing/e2e-testing.csproj')) {
                         echo 'Installing Playwright Browsers...'
                         sh '${DOTNET} tool install --global Microsoft.Playwright.CLI || true'
-                        sh '~/.dotnet/tools/playwright install --with-deps chromium'
+                        sh 'cd InventoryManagement/test/e2e-testing && ~/.dotnet/tools/playwright install --with-deps chromium'
                         
                         echo 'Running E2E Tests with Playwright...'
-                        sh '${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
+                        // Run with E2E_BASE_URL pointing to the host where client is published
+                        sh 'E2E_BASE_URL="http://host.docker.internal:9090" ${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
                     } else {
                         echo 'Skipping E2E Tests: e2e-testing project not found yet.'
                     }
