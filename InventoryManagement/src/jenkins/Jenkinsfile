@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/usr/share/dotnet:/usr/local/bin:${env.PATH}"
+        DOTNET = '/usr/share/dotnet/dotnet'
+        DOTNET_ROOT = '/usr/share/dotnet'
         DOTNET_CLI_TELEMETRY_OPTOUT = '1'
         SONAR_HOST_URL = 'https://sonarcloud.io'
         SONAR_ORGANIZATION = 'firnex360'
@@ -10,6 +11,19 @@ pipeline {
     }
 
     stages {
+        // 0. VERIFY TOOLS
+        stage('Verify Tools') {
+            steps {
+                echo 'Verifying .NET SDK installation...'
+                sh 'ls -la /usr/share/dotnet/dotnet || echo ".NET NOT FOUND at /usr/share/dotnet"'
+                sh 'ls -la /usr/bin/dotnet || echo ".NET NOT FOUND at /usr/bin"'
+                sh 'ls -la /usr/local/bin/dotnet || echo ".NET NOT FOUND at /usr/local/bin"'
+                sh 'which dotnet || echo "dotnet NOT on PATH"'
+                sh 'echo "PATH is: $PATH"'
+                sh '${DOTNET} --version || echo ".NET execution failed"'
+            }
+        }
+
         // 1. CHECKOUT
         stage('Checkout') {
             steps {
@@ -22,7 +36,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building .NET Solution...'
-                sh 'dotnet build InventoryManagement.slnx --no-incremental'
+                sh '${DOTNET} build InventoryManagement.slnx --no-incremental'
             }
         }
 
@@ -30,7 +44,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 echo 'Running Unit Tests...'
-                sh 'dotnet test InventoryManagement/test/unit-testing/unit-testing.csproj --no-build'
+                sh '${DOTNET} test InventoryManagement/test/unit-testing/unit-testing.csproj --no-build'
             }
         }
 
@@ -38,7 +52,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 echo 'Running Integration & Security Tests (Testcontainers)...'
-                sh 'dotnet test InventoryManagement/test/integration/integration.csproj --no-build'
+                sh '${DOTNET} test InventoryManagement/test/integration/integration.csproj --no-build'
             }
         }
 
@@ -50,7 +64,7 @@ pipeline {
                         echo 'Running API Tests with Postman / Newman...'
                         sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json'
                     } else {
-                        echo 'Skipping API Tests: PostmanCollection.json not found yet. (could not find the file)'
+                        echo 'Skipping API Tests: PostmanCollection.json not found yet.'
                     }
                 }
             }
@@ -62,9 +76,9 @@ pipeline {
                 script {
                     if (fileExists('InventoryManagement/test/e2e-testing/e2e-testing.csproj')) {
                         echo 'Running E2E Tests with Playwright...'
-                        sh 'dotnet test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
+                        sh '${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
                     } else {
-                        echo 'Skipping E2E Tests: e2e-testing project not found yet. (could not find the file)'
+                        echo 'Skipping E2E Tests: e2e-testing project not found yet.'
                     }
                 }
             }
@@ -74,8 +88,7 @@ pipeline {
         stage('Security Scan') {
             steps {
                 echo 'Running Security Vulnerability Scans...'
-                // OWASP Dependency Check / Package vulnerability check
-                sh 'dotnet list InventoryManagement.slnx package --vulnerable || true'
+                sh '${DOTNET} list InventoryManagement.slnx package --vulnerable || true'
             }
         }
 
@@ -85,12 +98,13 @@ pipeline {
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                     echo 'Running SonarCloud Analysis & Evaluating Quality Gate...'
                     sh '''
-                        dotnet tool install --global dotnet-sonarscanner || true
-                        dotnet tool install --global dotnet-coverage || true
-                        dotnet sonarscanner begin /k:"${SONAR_PROJECT_KEY}" /o:"${SONAR_ORGANIZATION}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
-                        dotnet build InventoryManagement.slnx --no-incremental
-                        dotnet-coverage collect "dotnet test InventoryManagement.slnx --no-build" -f xml -o "coverage.xml"
-                        dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+                        ${DOTNET} tool install --global dotnet-sonarscanner || true
+                        ${DOTNET} tool install --global dotnet-coverage || true
+                        export PATH="$PATH:/var/jenkins_home/.dotnet/tools"
+                        dotnet-sonarscanner begin /k:"${SONAR_PROJECT_KEY}" /o:"${SONAR_ORGANIZATION}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
+                        ${DOTNET} build InventoryManagement.slnx --no-incremental
+                        dotnet-coverage collect "${DOTNET} test InventoryManagement.slnx --no-build" -f xml -o "coverage.xml"
+                        dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
                     '''
                 }
             }
@@ -119,7 +133,7 @@ pipeline {
             echo 'Pipeline execution complete.'
         }
         success {
-            echo 'Pipeline succeeded! All 10 stages executed cleanly. Hopefullly'
+            echo 'Pipeline succeeded! All 10 stages executed cleanly.'
         }
         failure {
             echo 'Pipeline failed. Check build logs for details.'
