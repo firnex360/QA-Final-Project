@@ -135,6 +135,9 @@ pipeline {
                         echo 'Running E2E Tests with Playwright...'
                         // Use withEnv to reliably inject the base URL into the dotnet subprocess
                         withEnv(['E2E_BASE_URL=http://host.docker.internal:9090']) {
+                            sh 'echo "[DEBUG] E2E_BASE_URL=$E2E_BASE_URL"'
+                            // Build first (no --no-build) so env var reading code is compiled fresh
+                            sh '${DOTNET} build InventoryManagement/test/e2e-testing/e2e-testing.csproj'
                             sh '${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
                         }
                     } else {
