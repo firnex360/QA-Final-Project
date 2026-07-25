@@ -6,7 +6,6 @@
     <Project Path="InventoryManagement/src/InventorySystem.Shared/InventorySystem.Shared.csproj" />
   </Folder>
   <Folder Name="/InventoryManagement/test/">
-    <Project Path="InventoryManagement/test/e2e-testing/e2e-testing.csproj" />
     <Project Path="InventoryManagement/test/integration/integration.csproj" />
     <Project Path="InventoryManagement/test/performance-testing/PerformanceTests.csproj" />
     <Project Path="InventoryManagement/test/unit-testing/unit-testing.csproj" />
