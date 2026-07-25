@@ -68,6 +68,37 @@ pipeline {
                         sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                         sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
                         sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server'
+                        
+                        echo 'Waiting for Keycloak to be ready...'
+                        sh '''
+                            timeout=60
+                            while ! curl -s -f http://host.docker.internal:8080/realms/inventory-realm > /dev/null; do
+                                timeout=$((timeout - 1))
+                                if [ "$timeout" -eq 0 ]; then
+                                    echo "Keycloak did not become ready in time"
+                                    exit 1
+                                fi
+                                echo "Waiting for Keycloak... ($timeout seconds left)"
+                                sleep 2
+                            done
+                            echo "Keycloak is ready!"
+                        '''
+
+                        echo 'Waiting for API Server to be ready...'
+                        sh '''
+                            timeout=30
+                            while ! curl -s -f http://host.docker.internal:8090/openapi/v1.json > /dev/null; do
+                                timeout=$((timeout - 1))
+                                if [ "$timeout" -eq 0 ]; then
+                                    echo "API Server did not become ready in time"
+                                    exit 1
+                                fi
+                                echo "Waiting for API Server... ($timeout seconds left)"
+                                sleep 2
+                            done
+                            echo "API Server is ready!"
+                        '''
+
                         echo 'Running API Tests with Postman / Newman via host.docker.internal...'
                         sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json --env-var "baseUrl=http://host.docker.internal:8090" --insecure'
                     } else {
