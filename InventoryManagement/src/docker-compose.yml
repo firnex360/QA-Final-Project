@@ -185,6 +185,8 @@ services:
       dockerfile: jenkins/Dockerfile
     container_name: jenkins
     user: root
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8085:8080"
       - "50000:50000"
