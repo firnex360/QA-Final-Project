@@ -64,10 +64,12 @@ pipeline {
             steps {
                 script {
                     if (fileExists('InventoryManagement/test/api-testing/PostmanCollection.json')) {
-                        echo 'Ensuring server containers are running for API testing...'
-                        sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d db keycloak server'
-                        echo 'Running API Tests with Postman / Newman...'
-                        sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json --insecure'
+                        echo 'Building Keycloak image & ensuring server containers are running...'
+                        sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
+                        sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
+                        sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build db keycloak server'
+                        echo 'Running API Tests with Postman / Newman via host.docker.internal...'
+                        sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json --env-var "baseUrl=http://host.docker.internal:8090" --insecure'
                     } else {
                         echo 'Skipping API Tests: PostmanCollection.json not found yet.'
                     }
@@ -119,6 +121,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 echo 'Building Application Docker Images...'
+                sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
                 sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
                 sh 'docker build -t inventory-client:latest -f InventoryManagement/src/InventorySystem.Client/Dockerfile InventoryManagement/src'
             }
@@ -128,7 +131,7 @@ pipeline {
         stage('Deployment') {
             steps {
                 echo 'Deploying Updated Containers via Docker Compose...'
-                sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d server client'
+                sh 'docker compose -f InventoryManagement/src/docker-compose.yml up -d --no-build'
             }
         }
     }
