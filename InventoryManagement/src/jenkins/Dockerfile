@@ -2,7 +2,7 @@ FROM jenkins/jenkins:lts-jdk21
 
 USER root
 
-# 1. Install prerequisites for Docker CLI, .NET SDK, and ICU Globalization
+# 1. Install prerequisites for Docker CLI & .NET runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -24,14 +24,12 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get update && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Install .NET 10 SDK & Link to System Binaries
-RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir /usr/share/dotnet \
-    && chmod -R 755 /usr/share/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /bin/dotnet
+# 3. Copy .NET 10 SDK directly from Microsoft's official image (no download needed)
+COPY --from=mcr.microsoft.com/dotnet/sdk:10.0 /usr/share/dotnet /usr/share/dotnet
+RUN ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet
 
-# 4. Set Environment Variables
+# 4. Set environment variables for .NET & Global Tools
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="/usr/share/dotnet:${PATH}:/var/jenkins_home/.dotnet/tools"
 
