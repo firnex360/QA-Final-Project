@@ -3,6 +3,14 @@ using InventorySystem.Shared.Models;
 
 namespace InventorySystem.Client.Authorization;
 
+// #5.7-permission-store
+// Client-side cache of the caller's permissions. Fetches /api/permissions/me once per
+// session, flattens the result into "Resource:scope" strings, and raises Changed so
+// components re-render when they arrive.
+// If the call fails the set stays EMPTY, so the UI hides everything rather than
+// optimistically showing actions — and the API enforces regardless.
+// Has(resource, scope) is the single question every gated button asks.
+
 /// <summary>
 /// Holds the permissions Keycloak grants the signed-in user, fetched once from
 /// /api/permissions/me. The UI asks this instead of hardcoding role or permission

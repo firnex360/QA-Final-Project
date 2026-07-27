@@ -1,3 +1,4 @@
+# #6.6-alertmanager
 # Alertmanager configuration.
 # Alerts fired by Prometheus land here, get grouped, and are shown in the
 # Alertmanager UI (http://localhost:9093). No external notifier is configured

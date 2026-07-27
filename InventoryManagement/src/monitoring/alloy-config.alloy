@@ -1,8 +1,15 @@
+// #6.3-alloy-pipeline
 // ── Grafana Alloy Configuration ──────────────────────────────────────
-// Receives OTLP telemetry from .NET InventoryServer and routes:
-//   Traces  → Tempo
-//   Logs    → Loki
-//   Metrics → Prometheus (via remote-write)
+// The collector every signal passes through. Nothing talks to Tempo/Loki/Prometheus
+// directly — the app only speaks OTLP to Alloy, and Alloy fans it out:
+//
+//   app --OTLP:4317/4318--> Alloy --> Tempo      (traces)
+//                                 --> Loki       (logs)
+//                                 --> Prometheus (metrics, remote-write)
+//   app /metrics <--scrape-- Alloy --> Prometheus (remote-write)
+//
+// The scrape block is why Prometheus itself has no scrape targets: prometheus-net
+// metrics are collected here too, so ALL app metrics reach Prometheus via Alloy.
 
 // ─── OTLP Receiver ──────────────────────────────────────────────────
 // Listens for incoming OTLP data from the .NET server on gRPC (:4317)

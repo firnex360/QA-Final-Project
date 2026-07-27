@@ -5,13 +5,32 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace InventorySystem.Server.Controllers;
 
+// #1.0-product-api
+// REST API for "Gestión de Productos". Base route: /api/product
+//
+//   POST   /api/product          → create           (#1.1-create-api)
+//   GET    /api/product          → list + paging    (#1.4-list-api)
+//   GET    /api/product/stats    → dashboard totals (see Home dashboard)
+//   GET    /api/product/{id}     → single product   (#1.4-get-by-id-api)
+//   PUT    /api/product/{id}     → update           (#1.2-edit-api)
+//   PATCH  /api/product/{id}/stock → stock in/out   (stock module)
+//   DELETE /api/product/{id}     → delete           (#1.3-delete-api)
+//
+// Authorization: every action carries [Authorize] (valid JWT required); the actual
+// permission check happens in PolicyEnforcementMiddleware, which derives the scope
+// from the HTTP verb — GET→view, DELETE→delete, POST/PUT/PATCH→manage (#1.6-product-permissions).
 [Route("api/[controller]")]
 [ApiController]
 public class ProductController(IProductService productService) : ControllerBase
 {
     private readonly IProductService _productService = productService;
 
-    // POST api/product: accepts a Product JSON body from the client (this is the one to use)
+    // #1.1-create-api
+    // POST /api/product — creates a product from a JSON body.
+    // Rejects (400) when: Id is supplied, Name/SKU/Description/Category blank,
+    // Price <= 0, Quantity < 0, or MinimumStockLevel < 0.
+    // Returns 200 with { Message, ProductId, ProductName }; 500 on unexpected failure.
+    // Requires the "manage" scope on the Products resource.
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateProduct([FromBody] Product product)
@@ -53,8 +72,13 @@ public class ProductController(IProductService productService) : ControllerBase
         }
     }
 
-    // GET api/product
-    // Accepts filters from the body 
+    // #1.4-list-api
+    // GET /api/product — paginated, searchable, filterable, sortable product list.
+    // Query string binds to ProductQueryParameters (#1.0-query-params), e.g.
+    //   /api/product?pageNumber=1&pageSize=8&searchTerm=cable&category=Electronics
+    //                &sortBy=price&sortDescending=true&lowStockOnly=true
+    // All the heavy lifting is in the service (#1.4-list-service); this action only
+    // adapts it to HTTP. Returns PagedResponse<Product> (#1.0-paged-response).
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParameters parameters)
@@ -70,7 +94,12 @@ public class ProductController(IProductService productService) : ControllerBase
         }
     }
 
-    // GET api/product/stats  — aggregated figures for the home dashboard
+    // #4.1-dashboard-stats-api
+    // GET /api/product/stats — every figure the dashboard needs, in one call.
+    // Also reused by the products page to populate the category dropdown and the live
+    // low-stock count (#1.4.2-filters-ui). Computed in #4.1-dashboard-stats.
+    // Guarded by its own Keycloak resource (ProductStats), so read-only roles can see
+    // reports without being granted access to the product list itself.
     [HttpGet("stats")]
     [Authorize]
     public async Task<IActionResult> GetStats()
@@ -86,7 +115,9 @@ public class ProductController(IProductService productService) : ControllerBase
         }
     }
 
-    // GET api/product/{id}
+    // #1.4-get-by-id-api
+    // GET /api/product/{id} — single product, or 404 when it does not exist.
+    // Used by the Edit page to prefill its form (#1.2-edit-ui).
     [HttpGet("{id:int}")]
     [Authorize]
     public async Task<IActionResult> GetProductById(int id)
@@ -95,7 +126,13 @@ public class ProductController(IProductService productService) : ControllerBase
         return product == null ? NotFound() : Ok(product);
     }
 
-    // PUT api/product/{id}
+    // #1.2-edit-api
+    // PUT /api/product/{id} — full update of an existing product.
+    // Same validation rules as create, plus: the body Id (when non-zero) must match
+    // the URL id, otherwise 400. Returns 404 when the product does not exist.
+    // Loads the tracked entity first and copies each field onto it, so EF Core emits
+    // a real UPDATE and the audit trail records the before/after values.
+    // Requires the "manage" scope.
     [HttpPut("{id:int}")]
     [Authorize]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
@@ -139,7 +176,11 @@ public class ProductController(IProductService productService) : ControllerBase
         return Ok(existingProduct);
     }
 
-    // PATCH api/product/{id}/stock?delta=N — quick stock in/out (positive delta = in, negative = out)
+    // #2.1-adjust-api
+    // PATCH /api/product/{id}/stock?delta=N — stock entry/exit ("entrada y salida").
+    // delta > 0 adds stock, delta < 0 removes it; delta == 0 is rejected with 400.
+    // 400 also when the movement would push the quantity below zero; 404 when the
+    // product does not exist. Requires the ProductStock:manage scope.
     [HttpPatch("{id:int}/stock")]
     [Authorize]
     public async Task<IActionResult> AdjustStock(int id, [FromQuery] int delta)
@@ -158,7 +199,11 @@ public class ProductController(IProductService productService) : ControllerBase
         }
     }
 
-    // DELETE api/product/{id}
+    // #1.3-delete-api
+    // DELETE /api/product/{id} — hard delete. Returns 404 when the product does not
+    // exist, otherwise 200 with a confirmation message.
+    // Requires the "delete" scope, which is granted separately from "manage" — a role
+    // can be allowed to edit products without being allowed to remove them.
     [HttpDelete("{id:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteProduct(int id)

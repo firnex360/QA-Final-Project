@@ -3,6 +3,11 @@ using Microsoft.OpenApi;
 
 namespace InventorySystem.Server.OpenApi;
 
+// #3.3-bearer-scheme
+// Adds the "Bearer" (JWT) security scheme to the OpenAPI document and applies it to
+// every operation, which is what puts the Authorize button in Scalar and makes it send
+// the token on each try-it-out call.
+
 /// <summary>
 /// Declares the JWT Bearer security scheme in the generated OpenAPI document.
 /// Without this, Scalar/Swagger UI has no "Authorize" affordance and never sends

@@ -2,6 +2,18 @@
 @attribute [Authorize]
 @inject HttpClient Http
 
+@* #4.2-dashboard-ui
+   Dashboard / "Tablero de control" — route /. Everything comes from a single call to
+   #4.1-dashboard-stats-api.
+
+   6 KPI cards: total, active, inactive, low stock, out of stock, inventory value.
+     The low/out cards turn red only when the count is non-zero.
+   3 charts: products by category (donut), stock health (donut), value by category (bar).
+   1 table: "Critical Stock" — the productos críticos watchlist.
+
+   The stock-health series is derived client-side (#4.2-stock-health) rather than being
+   another endpoint. Most-sold products live on the movements page (#2.3-movements-ui). *@
+
 <PageTitle>Dashboard</PageTitle>
 
 <div class="page-header">
@@ -142,8 +154,10 @@ else
     private ProductStatsDto? stats;
     private string? errorMessage;
 
+    // #4.2-stock-health
     // Derived from the stat counts — a 3-way split of the catalogue by stock health.
-    // LowStockCount already includes out-of-stock items, so subtract them out.
+    // LowStockCount already includes out-of-stock items, so subtract them out;
+    // otherwise the donut would double-count and the slices wouldn't sum to the total.
     private List<LabelCountDto> stockHealth => stats is null ? new() : new()
     {
         new LabelCountDto { Label = "Healthy",      Count = stats.TotalProducts - stats.LowStockCount },

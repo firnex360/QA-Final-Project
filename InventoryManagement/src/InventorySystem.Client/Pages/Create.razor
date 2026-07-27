@@ -2,6 +2,16 @@
 @attribute [Authorize]
 @inject HttpClient Http
 
+@* #1.1-create-ui
+   "Agregar Producto" form — route /create.
+
+   Binds a single `newProduct` instance to the form, validates it client-side
+   (#1.1-create-ui-validation), then POSTs to /api/product (#1.1-create-api).
+   On success the form resets so several products can be added in a row.
+
+   Category is a fixed dropdown: Electronics, Clothing, Home, Books.
+   The nav link to this page only renders for users with product:manage
+   (#1.6-product-permissions); the API enforces the same rule. *@
 
 <PageTitle>Create</PageTitle>
 
@@ -97,6 +107,10 @@
     private string successMessage = string.Empty;
     private bool isSubmitting = false;
 
+    // #1.1-create-ui-validation
+    // Client-side mirror of the server rules in #1.1-create-api. Collects every
+    // problem into one message instead of failing on the first, and stops before
+    // the request is sent. This is UX only — the API re-validates regardless.
     private async Task CreateProduct()
     {
         validationError = string.Empty;
@@ -132,24 +146,9 @@
 
         isSubmitting = true;
 
-        // this is for quick testing
-        @* Product productToCreate = new Product
-        {
-            Name = "test",
-            CodeSKU = "TEST-001",
-            Description = "probando",
-            Category = "Testing",
-            Price = 10,
-            Quantity = 50,
-            MinimumStockLevel = 2,
-            IsActive = true
-        };
-        
-        newProduct = productToCreate; *@
-
         try
         {
-            // Serialize the Product to JSON 
+            // Serialized to JSON and sent to #1.1-create-api
             var response = await Http.PostAsJsonAsync("api/product", newProduct);
 
             if (response.IsSuccessStatusCode)

@@ -6,6 +6,20 @@ using Microsoft.Extensions.Options;
 
 namespace InventorySystem.Server.Authorization;
 
+// #5.3-keycloak-decision
+// Talks to Keycloak Authorization Services over the UMA ticket grant.
+//
+// EvaluateAsync sends permission="<uri>#<scope>" with response_mode=decision and gets
+// back allow/deny. Keycloak matches the URI against its Resource definitions and runs
+// the bound Policies, so the entire authorization matrix lives in Keycloak, not here.
+// A 400 containing "invalid_resource" is translated to NoResourceDefined.
+//
+// GetGrantedPermissionsAsync omits the permission parameter and uses
+// response_mode=permissions to list everything the caller holds — that is what
+// /api/permissions/me returns to the UI (#5.6-permissions-api).
+//
+// Only the caller's own access token is forwarded; no client secret is needed.
+
 /// <summary>
 /// Evaluates each request against Keycloak Authorization Services using the UMA
 /// ticket grant. Keycloak matches the request path against the URIs defined on its

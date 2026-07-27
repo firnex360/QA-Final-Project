@@ -1,3 +1,9 @@
+# #6.7-grafana-datasources
+# The three datasources, provisioned automatically at startup (no clicking in the UI).
+# Prometheus is the default. Tempo and Loki are cross-linked so you can pivot from a
+# trace to its logs (tracesToLogsV2, matched on trace id) and from a log line back to
+# the trace (derivedFields on trace_id) — the correlation the brief asks for.
+# URLs use container names on the compose network, not localhost.
 apiVersion: 1
 
 datasources:

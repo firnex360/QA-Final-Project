@@ -1,3 +1,13 @@
+# #6.5-alert-rules
+# The five alerts the brief requires. Each must stay true for its "for:" duration
+# before firing, which prevents momentary spikes from paging anyone:
+#   ApiServiceDown     critical  target unreachable            1m
+#   HighErrorRate      warning   >5% of requests are 5xx       5m
+#   HighRequestLatency warning   p95 above 1s                  5m
+#   HighCpuUsage       warning   CPU above 85%                 5m
+#   AuthFailureSpike   warning   >1 401/403 per second         5m
+# Note the [5m] windows on OTLP-sourced metrics (CPU): those export every 60s, so a
+# 1-minute rate window would have too few samples and evaluate to nothing.
 groups:
   - name: inventory-api-alerts
     rules:

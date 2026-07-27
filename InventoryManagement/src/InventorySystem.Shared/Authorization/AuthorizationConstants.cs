@@ -1,5 +1,13 @@
 namespace InventorySystem.Shared.Authorization;
 
+// #5.4-resources-scopes
+// The Keycloak Resource and Scope names the UI needs to reason about, kept in Shared so
+// client and server spell them identically. Resources map to URI patterns in Keycloak:
+//   Products     → /api/product/*      ProductStats → /api/product/stats
+//   ProductStock → /api/product/*/stock  Audit      → /api/audit/*
+// This is deliberately NOT a permission registry — new permissions or policies created
+// in Keycloak need no entry here; a name is added only when the UI must render for it.
+
 /// <summary>
 /// Names of the Keycloak Authorization Services Resources this application surfaces.
 /// These must match the Resource names in Keycloak exactly.

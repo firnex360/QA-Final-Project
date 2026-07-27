@@ -1,5 +1,11 @@
 namespace InventorySystem.Server.Authorization;
 
+// #5.5-requires-scope
+// Escape hatch for endpoints whose HTTP verb doesn't express the intent (e.g. a POST
+// that approves rather than creates). Applying it overrides the verb→scope convention
+// in #5.2-policy-middleware. The scope must exist on the matching Keycloak Resource,
+// otherwise the request is denied (fail closed).
+
 /// <summary>
 /// Overrides the scope the policy middleware asks Keycloak for on this endpoint.
 ///

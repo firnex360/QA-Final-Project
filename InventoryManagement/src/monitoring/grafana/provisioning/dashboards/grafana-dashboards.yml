@@ -1,3 +1,7 @@
+# #6.8-grafana-dashboards
+# Tells Grafana to load every dashboard JSON mounted at /var/lib/grafana/dashboards.
+# Because they are provisioned from files, the dashboards are version-controlled and
+# recreated on a fresh stack — nothing has to be rebuilt by hand.
 apiVersion: 1
 
 providers:

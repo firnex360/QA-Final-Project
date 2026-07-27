@@ -11,7 +11,10 @@ namespace InventorySystem.Server.Controllers;
 [ApiController]
 public class AuditController(ApplicationDbContext db) : ControllerBase
 {
-    // GET api/audit — most recent audit records (admin + manager only)
+    // #2.4-audit-api
+    // GET /api/audit — the 100 most recent audit records, newest first.
+    // The cap keeps the payload small; the client paginates what it receives.
+    // Requires the Audit:view scope.
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetAuditLogs()
@@ -30,7 +33,11 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
         return Ok(logs);
     }
 
-    // GET api/audit/stats — aggregated audit figures for the admin dashboard
+    // #2.4-audit-stats-api
+    // GET /api/audit/stats — aggregated audit figures: totals for today and the last
+    // 7 days, plus breakdowns by action, by user (top 5) and by entity.
+    // The 7-day series is grouped in memory because the set is small, which avoids
+    // provider-specific date-truncation SQL.
     [HttpGet("stats")]
     [Authorize]
     public async Task<IActionResult> GetAuditStats()
@@ -80,8 +87,10 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
         return Ok(stats);
     }
 
-    // GET api/audit/stock-movements — the "Historial de Movimientos", derived from the audit
-    // log: Product updates whose Quantity changed. No separate table; this reads AuditLogs.
+    // #2.3-movements-api
+    // GET /api/audit/stock-movements — the "Historial de Movimientos", derived from the
+    // audit log: Product updates whose Quantity changed. There is NO stock-movement
+    // table; this is a projection over AuditLogs (#2.3-movements-derive), capped at 100.
     [HttpGet("stock-movements")]
     [Authorize]
     public async Task<IActionResult> GetStockMovements()
@@ -90,7 +99,10 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
         return Ok(movements.Take(100).ToList()); // cap so we don't ship the whole trail; client paginates
     }
 
-    // GET api/audit/stock-movements/stats — aggregated figures over the same derived movements.
+    // #2.3-movements-stats-api
+    // GET /api/audit/stock-movements/stats — totals over the same derived movements:
+    // units in, units out, count by direction, activity for the last 7 days, and
+    // TopProducts = "productos más vendidos", ranked by units removed from stock.
     [HttpGet("stock-movements/stats")]
     [Authorize]
     public async Task<IActionResult> GetStockMovementStats()
@@ -127,9 +139,15 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
         return Ok(stats);
     }
 
-    // Reads the audit trail and turns every Product update that changed Quantity into a
-    // stock movement. Product names are resolved from the Products table so "most sold"
-    // reads by name; deleted products fall back to "Product #id".
+    // #2.3-movements-derive
+    // Turns audit rows into stock movements. Filter: EntityName == "Product",
+    // Action == "Update", and AffectedColumns mentions "Quantity".
+    // Because that column match is only a substring test, each candidate is confirmed by
+    // actually parsing an integer Quantity out of both OldValues and NewValues and
+    // requiring the two to differ — so a rename that merely mentions the word is skipped.
+    // Delta = new - old (positive = entrada, negative = salida).
+    // Product names are resolved from the Products table so "most sold" reads by name;
+    // deleted products fall back to "Product #id".
     private async Task<List<StockMovementDto>> LoadStockMovementsAsync()
     {
         var rows = await db.AuditLogs

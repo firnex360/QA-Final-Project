@@ -3,6 +3,13 @@ using Audit.EntityFramework;
 
 namespace InventorySystem.Server.Models;
 
+// #2.4-audit-entity
+// One row per audited change; the table the whole audit trail lives in.
+// OldValues/NewValues hold JSON snapshots and AffectedColumns a JSON array of the
+// changed column names — those three fields are what make the stock-movement history
+// derivable without a second table (#2.3-movements-derive).
+// [AuditIgnore] stops the audit system from auditing its own inserts (infinite loop).
+
 /// <summary>
 /// Stores a record of every Insert, Update, and Delete operation
 /// performed on any audited entity in the database.

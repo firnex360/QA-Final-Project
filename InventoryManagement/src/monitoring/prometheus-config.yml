@@ -1,3 +1,7 @@
+# #6.4-prometheus-config
+# Metrics store. Listens on :3300 (not the default 9090 — see docker-compose).
+# Receives everything by remote-write from Alloy and evaluates the alert rules,
+# forwarding anything that fires to Alertmanager.
 global:
   scrape_interval: 15s
 

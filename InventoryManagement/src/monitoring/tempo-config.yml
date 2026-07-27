@@ -1,3 +1,7 @@
+# #6.10-tempo-config
+# Trace store, queried by Grafana on :3200 and receiving OTLP from Alloy on 4317/4318.
+# Local filesystem blocks with 1h retention — enough to demo distributed tracing
+# (request → EF Core SQL → outbound HTTP) without needing object storage.
 server:
   http_listen_port: 3200
 

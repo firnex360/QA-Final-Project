@@ -1,5 +1,6 @@
 {
   "annotations": { "list": [] },
+  "description": "#6.8-dash-infra — Infrastructure: CPU, memory/heap, GC, thread pool, Kestrel connections, exceptions, lock contention and scrape-target health.",
   "editable": true,
   "graphTooltip": 0,
   "links": [],
