@@ -5,7 +5,7 @@ namespace e2e_testing;
 
 public class ProductsCrudTests : PageTest
 {
-    private const string BaseUrl = "http://localhost:9090";
+    private static readonly string BaseUrl = Environment.GetEnvironmentVariable("E2E_BASE_URL") ?? "http://localhost:9090";
     private const string TestUsername = "e2e-testing";
     private const string TestPassword = "12345";
 

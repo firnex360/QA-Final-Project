@@ -1,0 +1,216 @@
+pipeline {
+    agent any
+
+    environment {
+        DOTNET = 'dotnet' // Simplified since we mapped /usr/bin/dotnet globally in the Jenkins Dockerfile
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        TESTCONTAINERS_RYUK_DISABLED = 'true'
+        TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = '/var/run/docker.sock'
+        TESTCONTAINERS_HOST_OVERRIDE = 'host.docker.internal'
+        SONAR_HOST_URL = 'https://sonarcloud.io'
+        SONAR_ORGANIZATION = 'firnex360'
+        SONAR_PROJECT_KEY = 'firnex360_QA-Final-Project'
+    }
+
+    stages {
+        // 0. VERIFY TOOLS
+        stage('Verify Tools') {
+            steps {
+                echo 'Verifying .NET SDK and Docker installations...'
+                sh 'dotnet --version || echo ".NET execution failed"'
+                sh 'docker --version || echo "Docker CLI not found"'
+                sh 'node --version || echo "Node.js not found"'
+            }
+        }
+
+        // 1. CHECKOUT
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code from Git...'
+                checkout scm
+            }
+        }
+
+        // 2. BUILD
+        stage('Build') {
+            steps {
+                echo 'Building .NET Solution...'
+                sh '${DOTNET} build InventoryManagement.slnx --no-incremental'
+            }
+        }
+
+        // 3. UNIT TESTS
+        stage('Unit Tests') {
+            steps {
+                echo 'Running Unit Tests...'
+                sh '${DOTNET} test InventoryManagement/test/unit-testing/unit-testing.csproj --no-build'
+            }
+        }
+
+        // 4. INTEGRATION TESTS
+        stage('Integration Tests') {
+            steps {
+                echo 'Running Integration & Security Tests (Testcontainers)...'
+                sh '${DOTNET} test InventoryManagement/test/integration/integration.csproj --no-build'
+            }
+        }
+
+        // 5. API TESTS
+        stage('API Tests') {
+            steps {
+                script {
+                    if (fileExists('InventoryManagement/test/api-testing/PostmanCollection.json')) {
+                        echo 'Adapting configuration for CI environment (routing localhost to host.docker.internal)...'
+                        sh "sed -i 's/localhost/host.docker.internal/g' InventoryManagement/src/InventorySystem.Client/wwwroot/appsettings.json"
+                        sh "sed -i 's|Keycloak__Authority=http://localhost:8080|Keycloak__Authority=http://host.docker.internal:8080|g' InventoryManagement/src/docker-compose.yml"
+                        sh "sed -i 's|KC_HOSTNAME=http://localhost:8080|KC_HOSTNAME=http://host.docker.internal:8080|g' InventoryManagement/src/docker-compose.yml"
+
+                        echo 'Building images & ensuring server containers are running...'
+                        sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
+                        sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
+                        sh 'docker build -t inventory-client:latest -f InventoryManagement/src/InventorySystem.Client/Dockerfile InventoryManagement/src'
+                        
+                        // FIX: CD into the directory to avoid the -f flag parsing error
+                        // Bring up client as well, because E2E tests need it.
+                        sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server client'
+                        
+                        echo 'Waiting for Keycloak to be ready...'
+                        sh '''
+                            timeout=60
+                            while ! curl -s -f http://host.docker.internal:8080/realms/inventory-realm > /dev/null; do
+                                timeout=$((timeout - 1))
+                                if [ "$timeout" -eq 0 ]; then
+                                    echo "Keycloak did not become ready in time"
+                                    exit 1
+                                fi
+                                echo "Waiting for Keycloak... ($timeout seconds left)"
+                                sleep 2
+                            done
+                            echo "Keycloak is ready!"
+                        '''
+
+                        echo 'Waiting for API Server to be ready...'
+                        sh '''
+                            timeout=30
+                            while ! curl -s -f http://host.docker.internal:8090/openapi/v1.json > /dev/null; do
+                                timeout=$((timeout - 1))
+                                if [ "$timeout" -eq 0 ]; then
+                                    echo "API Server did not become ready in time"
+                                    exit 1
+                                fi
+                                echo "Waiting for API Server... ($timeout seconds left)"
+                                sleep 2
+                            done
+                            echo "API Server is ready!"
+                        '''
+
+                        echo 'Running API Tests with Postman / Newman via host.docker.internal...'
+                        sh 'npx -y newman run InventoryManagement/test/api-testing/PostmanCollection.json --env-var "baseUrl=http://host.docker.internal:8090" --insecure'
+                    } else {
+                        echo 'Skipping API Tests: PostmanCollection.json not found yet.'
+                    }
+                }
+            }
+        }
+
+        // 6. E2E TESTS
+        stage('E2E Tests') {
+            steps {
+                script {
+                    if (fileExists('InventoryManagement/test/e2e-testing/e2e-testing.csproj')) {
+                        echo 'Waiting for Client to be ready...'
+                        sh '''
+                            timeout=30
+                            while ! curl -s -f http://host.docker.internal:9090/ > /dev/null; do
+                                timeout=$((timeout - 1))
+                                if [ "$timeout" -eq 0 ]; then
+                                    echo "Client did not become ready in time"
+                                    exit 1
+                                fi
+                                echo "Waiting for Client... ($timeout seconds left)"
+                                sleep 2
+                            done
+                            echo "Client is ready!"
+                        '''
+
+                        echo 'Installing Playwright Browsers...'
+                        sh '${DOTNET} tool install --global Microsoft.Playwright.CLI || true'
+                        sh 'cd InventoryManagement/test/e2e-testing && ~/.dotnet/tools/playwright install --with-deps chromium'
+
+                        echo 'Running E2E Tests with Playwright...'
+                        // Use withEnv to reliably inject the base URL into the dotnet subprocess
+                        withEnv(['E2E_BASE_URL=http://host.docker.internal:9090']) {
+                            sh 'echo "[DEBUG] E2E_BASE_URL=$E2E_BASE_URL"'
+                            // Build first (no --no-build) so env var reading code is compiled fresh
+                            sh '${DOTNET} build InventoryManagement/test/e2e-testing/e2e-testing.csproj'
+                            sh '${DOTNET} test InventoryManagement/test/e2e-testing/e2e-testing.csproj --no-build'
+                        }
+                    } else {
+                        echo 'Skipping E2E Tests: e2e-testing project not found yet.'
+                    }
+                }
+            }
+        }
+
+
+
+        // 7. SECURITY SCAN
+        stage('Security Scan') {
+            steps {
+                echo 'Running Security Vulnerability Scans...'
+                sh '${DOTNET} list InventoryManagement.slnx package --vulnerable || true'
+            }
+        }
+
+        // 8. QUALITY GATES
+        stage('Quality Gates') {
+            steps {
+                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                    echo 'Running SonarCloud Analysis & Evaluating Quality Gate...'
+                    sh '''
+                        ${DOTNET} tool install --global dotnet-sonarscanner || true
+                        ${DOTNET} tool install --global dotnet-coverage || true
+                        export PATH="$PATH:/root/.dotnet/tools"
+                        dotnet-sonarscanner begin /k:"${SONAR_PROJECT_KEY}" /o:"${SONAR_ORGANIZATION}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml"
+                        ${DOTNET} build InventoryManagement.slnx --no-incremental
+                        dotnet-coverage collect "${DOTNET} test InventoryManagement.slnx --no-build" -f xml -o "coverage.xml"
+                        dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+                    '''
+                }
+            }
+        }
+
+        // 9. DOCKER BUILD
+        stage('Docker Build') {
+            steps {
+                echo 'Building Application Docker Images...'
+                sh 'docker build -t inventory-keycloak:latest -f InventoryManagement/src/keycloak/Dockerfile InventoryManagement/src/keycloak'
+                sh 'docker build -t inventory-server:latest -f InventoryManagement/src/InventorySystem.Server/Dockerfile InventoryManagement/src'
+                sh 'docker build -t inventory-client:latest -f InventoryManagement/src/InventorySystem.Client/Dockerfile InventoryManagement/src'
+            }
+        }
+
+        // 10. DEPLOYMENT
+        stage('Deployment') {
+            steps {
+                echo 'Deploying Updated Core Containers via Docker Compose...'
+                // FIX: CD into the directory to avoid the -f flag parsing error
+                sh 'cd InventoryManagement/src && docker compose up -d --no-build db keycloak server client'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution complete.'
+            // Optional: If you want ephemeral tests, uncomment the line below to tear down containers after build.
+            // sh 'docker compose -f InventoryManagement/src/docker-compose.yml down'
+        }
+        success {
+            echo 'Pipeline succeeded! All 10 stages executed cleanly.'
+        }
+        failure {
+            echo 'Pipeline failed. Check build logs for details.'
+        }
+    }
+}

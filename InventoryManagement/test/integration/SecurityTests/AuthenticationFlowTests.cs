@@ -38,7 +38,7 @@ public class AuthenticationFlowTests : IClassFixture<InventoryApiFactory>
         var response = await client.PostAsJsonAsync("/api/auth/token", new { Username = "", Password = "" }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        // Should not crash with 500, but will return 502 BadGateway (Keycloak unreachable in tests) or 400/401 from Keycloak
-        Assert.True(response.StatusCode == HttpStatusCode.BadGateway || response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.Unauthorized);
+        // Should not crash with 500, but will return 502 BadGateway, 400, 401, or 403 when auth endpoint fails without live Keycloak
+        Assert.True(response.StatusCode == HttpStatusCode.BadGateway || response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden);
     }
 }

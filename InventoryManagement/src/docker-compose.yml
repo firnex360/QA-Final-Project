@@ -21,6 +21,7 @@ services:
 
   # ASP.NET Core Web API 
   server:
+    image: inventory-server:latest
     build:
       context: .
       dockerfile: InventorySystem.Server/Dockerfile
@@ -49,6 +50,7 @@ services:
 
   # Blazor WASM Client (served by nginx) 
   client:
+    image: inventory-client:latest
     build:
       context: .
       dockerfile: InventorySystem.Client/Dockerfile
@@ -59,7 +61,8 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      # Use wget instead of curl since Alpine nginx images do not have curl installed
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -68,7 +71,10 @@ services:
 
   # Keycloak Identity Provider
   keycloak:
-    image: quay.io/keycloak/keycloak:26.6.3
+    image: inventory-keycloak:latest
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile
     container_name: keycloak
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
@@ -83,13 +89,13 @@ services:
     command: ["start-dev", "--import-realm"]
     volumes:
       - keycloak-volume:/opt/keycloak/data
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     restart: on-failure:3
 
   # Prometheus — scrapes the API's /metrics endpoint, evaluates alert rules
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
+    profiles: ["monitoring"]
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.enable-remote-write-receiver"
@@ -108,6 +114,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: alertmanager
+    profiles: ["monitoring"]
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
     ports:
@@ -121,6 +128,7 @@ services:
   grafana:
     image: grafana/grafana:11.2.0
     container_name: grafana
+    profiles: ["monitoring"]
     ports:
       - "3000:3000"
     environment:
@@ -138,6 +146,7 @@ services:
   loki:
     image: grafana/loki:3.1.0
     container_name: loki
+    profiles: ["monitoring"]
     user: "0:0"
     ports:
       - "3100:3100"
@@ -151,6 +160,7 @@ services:
   tempo:
     image: grafana/tempo:2.5.0
     container_name: tempo
+    profiles: ["monitoring"]
     command: [ "-config.file=/etc/tempo/tempo-config.yml" ]
     ports:
       - "3200:3200"
@@ -163,6 +173,7 @@ services:
   alloy:
     image: grafana/alloy:v1.3.1
     container_name: alloy
+    profiles: ["monitoring"]
     ports:
       - "4317:4317"
       - "4318:4318"
@@ -178,6 +189,23 @@ services:
       - tempo
     restart: on-failure:3
 
+  # Jenkins CI/CD Automation Server
+  jenkins:
+    build:
+      context: .
+      dockerfile: jenkins/Dockerfile
+    container_name: jenkins
+    user: root
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8085:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: on-failure:3
+
 volumes:
   pgdata:
   keycloak-volume:
@@ -186,3 +214,4 @@ volumes:
   loki-data:
   tempo-data:
   alertmanager-data:
+  jenkins-data:
