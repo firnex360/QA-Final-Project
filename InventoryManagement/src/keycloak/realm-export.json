@@ -1043,11 +1043,13 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
         "http://localhost:9090/authentication/login-callback",
-        "http://localhost:5167/authentication/login-callback"
+        "http://localhost:5167/authentication/login-callback",
+        "http://host.docker.internal:9090/authentication/login-callback"
       ],
       "webOrigins": [
         "http://localhost:9090",
-        "http://localhost:5167"
+        "http://localhost:5167",
+        "http://host.docker.internal:9090"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -1219,6 +1221,56 @@
         "organization",
         "microprofile-jwt"
       ]
+    }
+  ],
+  "users": [
+    {
+      "username": "api-test",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "api-test@inventory.local",
+      "firstName": "API",
+      "lastName": "Test",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "12345",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-inventory-realm"
+      ],
+      "clientRoles": {
+        "inventory-client": [
+          "adminY"
+        ]
+      }
+    },
+    {
+      "username": "e2e-testing",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "e2e-testing@inventory.local",
+      "firstName": "E2E",
+      "lastName": "Testing",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "12345",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-inventory-realm"
+      ],
+      "clientRoles": {
+        "inventory-client": [
+          "adminY"
+        ]
+      }
     }
   ],
   "clientScopes": [
