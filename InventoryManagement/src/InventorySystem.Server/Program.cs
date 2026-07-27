@@ -185,6 +185,13 @@ Audit.EntityFramework.Configuration.Setup()
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
+    await next();
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
