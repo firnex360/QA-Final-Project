@@ -871,6 +871,9 @@
               },
               {
                 "name": "manage"
+              },
+              {
+                "name": "delete"
               }
             ],
             "icon_uri": ""
@@ -980,6 +983,18 @@
             }
           },
           {
+            "name": "Can Delete Products",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Products\"]",
+              "scopes": "[\"delete\"]",
+              "applyPolicies": "[\"is-manager\",\"is-admin\"]"
+            }
+          },
+          {
             "name": "Can view stats",
             "description": "",
             "type": "scope",
@@ -1023,6 +1038,10 @@
           },
           {
             "name": "manage",
+            "iconUri": ""
+          },
+          {
+            "name": "delete",
             "iconUri": ""
           }
         ],
