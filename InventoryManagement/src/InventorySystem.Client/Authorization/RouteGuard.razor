@@ -1,0 +1,69 @@
+@inject PermissionStore Permissions
+
+@* #5.11-page-guards
+   Renders a page only if the user may perform the API call that page depends on.
+
+   The page declares WHAT IT DOES — "this screen performs POST /api/product" — and the
+   server resolves who may do it (#5.12-permission-check-api). No resource or scope name
+   appears in the client, so the mapping lives only in Keycloak: change a policy there and
+   this guard follows with no redeploy.
+
+   Two ways to use it:
+
+     Wrapper — hides the content and shows the notice instead:
+         <RouteGuard Path="/api/product" Method="POST" Action="create products">
+             ...page content...
+         </RouteGuard>
+
+     Standalone — just the notice, for pages that already branch on their own state:
+         <RouteGuard Path="/api/audit" Action="review the audit trail" />
+
+   Presentation only — the API enforces the same policies and answers 403 regardless. *@
+
+@if (allowed is null)
+{
+    @* Still asking. Rendering either branch now would flash the wrong one. *@
+    @if (ChildContent is not null)
+    {
+        <p><em>Loading...</em></p>
+    }
+}
+else if (allowed is true)
+{
+    @ChildContent
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading h6 mb-2">🔒 Access restricted</h4>
+        <p class="mb-0">
+            You don't have permission to @(string.IsNullOrWhiteSpace(Action) ? "open this section" : Action).
+            Ask an administrator to grant access.
+        </p>
+    </div>
+}
+
+@code {
+    /// <summary>The API path this page depends on, e.g. "/api/product".</summary>
+    [Parameter, EditorRequired]
+    public string Path { get; set; } = string.Empty;
+
+    /// <summary>The HTTP method this page uses. The server maps it to a scope.</summary>
+    [Parameter]
+    public string Method { get; set; } = "GET";
+
+    /// <summary>Phrase for the notice, e.g. "create products".</summary>
+    [Parameter]
+    public string? Action { get; set; }
+
+    /// <summary>Optional. When omitted, only the denial notice is rendered.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool? allowed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        allowed = await Permissions.CanAsync(Path, Method);
+    }
+}

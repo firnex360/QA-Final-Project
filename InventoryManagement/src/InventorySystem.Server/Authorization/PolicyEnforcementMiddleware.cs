@@ -109,15 +109,8 @@ public sealed class PolicyEnforcementMiddleware(
         if (declared is not null)
             return declared.Scope;
 
-        var method = context.Request.Method;
-
-        if (HttpMethods.IsGet(method) || HttpMethods.IsHead(method))
-            return Scopes.View;
-
-        if (HttpMethods.IsDelete(method))
-            return Scopes.Delete;
-
-        return Scopes.Manage;
+        // Shared with the pre-flight check endpoint so both apply the identical rule.
+        return Scopes.ForMethod(context.Request.Method);
     }
 
     private static string? ExtractBearerToken(HttpContext context)

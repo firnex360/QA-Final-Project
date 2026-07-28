@@ -2,12 +2,15 @@
 @attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject PermissionStore Permissions
 
 <PageTitle>Edit Product</PageTitle>
 
 <h1>Edit Product</h1>
 <p role="status">Update the selected product information.</p>
 
+@* This page performs PUT /api/product/{id}; the guard asks the server whether the user may. *@
+<RouteGuard Path="/api/product" Method="PUT" Action="edit products">
 @if (isLoading)
 {
     <p><em>Loading...</em></p>
@@ -118,7 +121,7 @@ else
 
     </form>
 }
-
+</RouteGuard>
 
 <style>
     .wrapper {	
@@ -143,6 +146,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Don't even fetch the product for a user who may not edit it. Cached, so this
+        // costs nothing beyond the check the surrounding RouteGuard already made.
+        if (!await Permissions.CanAsync("/api/product", "PUT"))
+        {
+            isLoading = false;
+            return;
+        }
+
         try
         {
             editingProduct = await Http.GetFromJsonAsync<Product>($"api/product/{Id}");
