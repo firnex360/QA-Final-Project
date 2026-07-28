@@ -35,7 +35,7 @@ services:
       dockerfile: InventorySystem.Server/Dockerfile
     container_name: inventory-server
     environment:
-      - ASPNETCORE_ENVIRONMENT=Staging
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-InventoryDb};Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-password}
       - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
       - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration

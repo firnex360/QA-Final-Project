@@ -246,7 +246,7 @@ app.MapScalarApiReference();
 
 if (app.Environment.IsProduction())
 {
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
 }
 
 if (app.Environment.IsStaging())
