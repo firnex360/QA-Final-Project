@@ -14,12 +14,14 @@ Para saber cómo usar las anclas, ver [01-gestion-de-productos.md](01-gestion-de
 | `#5.2-policy-middleware` | Punto único de control de permisos | PolicyEnforcementMiddleware.cs |
 | `#5.3-keycloak-decision` | Consulta de decisiones a Keycloak (UMA) | KeycloakDecisionService.cs |
 | `#5.4-resources-scopes` | Nombres de recursos y scopes | AuthorizationConstants.cs |
-| `#5.5-requires-scope` | Override del scope por endpoint | RequiresScopeAttribute.cs |
-| `#5.6-permissions-api` | `GET /api/permissions/me` | PermissionsController.cs |
+| `#5.6-permissions-api` | Endpoints de permisos del usuario | PermissionsController.cs |
 | `#5.7-permission-store` | Caché de permisos en el cliente | PermissionStore.cs |
 | `#5.8-client-oidc` | Login OIDC del navegador | Client/Program.cs |
 | `#5.9-cors` | Orígenes permitidos | Program.cs |
 | `#5.10-keycloak-options` | Configuración de Keycloak | KeycloakAuthorizationOptions.cs |
+| `#5.11-page-guards` | Protección de páginas por URL directa | RouteGuard.razor |
+| `#5.12-permission-check-api` | `GET /api/permissions/check` (pre-vuelo) | PermissionsController.cs |
+| `#5.12-scope-convention` | Regla verbo → scope compartida | AuthorizationConstants.cs |
 
 ---
 
@@ -129,13 +131,6 @@ servidor los escriban igual. Es explícitamente **no** un registro de permisos: 
 o una política nueva en Keycloak no requiere tocar este archivo; solo se agrega un nombre cuando
 la interfaz debe dibujar algo en función de él.
 
-### `#5.5-requires-scope`
-**Archivo:** [RequiresScopeAttribute.cs](../InventoryManagement/src/InventorySystem.Server/Authorization/RequiresScopeAttribute.cs)
-
-Válvula de escape para endpoints cuyo verbo HTTP no expresa la intención — por ejemplo un `POST`
-que aprueba en lugar de crear. Aplicarlo anula la convención verbo → scope. El scope indicado
-debe existir en el recurso correspondiente de Keycloak; si no, la petición se deniega.
-
 ### `#5.10-keycloak-options`
 **Archivo:** [KeycloakAuthorizationOptions.cs](../InventoryManagement/src/InventorySystem.Server/Authorization/KeycloakAuthorizationOptions.cs)
 
@@ -152,21 +147,81 @@ comprobación en pruebas para no depender de un Keycloak vivo.
 ### `#5.6-permissions-api`
 **Archivo:** [PermissionsController.cs](../InventoryManagement/src/InventorySystem.Server/Controllers/PermissionsController.cs)
 
-Devuelve todos los pares recurso:scope que Keycloak concede a quien pregunta. Es la razón por la
-que el cliente no necesita su propia lista de permisos: la consulta en tiempo de ejecución en
-lugar de traer roles incrustados en el código.
+Expone las dos formas que tiene la interfaz de preguntar qué puede hacer. `GET
+/api/permissions/me` devuelve todos los pares recurso:scope que Keycloak concede a quien
+pregunta — por eso el cliente no necesita su propia lista de permisos. `GET
+/api/permissions/check` (`#5.12-permission-check-api`) responde por una operación concreta.
+Ambos están exentos de la evaluación de políticas porque solo informan del acceso del propio
+solicitante; exigirles un permiso sería circular.
 
 ### `#5.7-permission-store`
 **Archivo:** [PermissionStore.cs](../InventoryManagement/src/InventorySystem.Client/Authorization/PermissionStore.cs)
 
-Caché en el cliente de esos permisos. Los pide una sola vez por sesión, los aplana a cadenas
-`Recurso:scope` y emite un evento para que los componentes se vuelvan a dibujar cuando lleguen.
-Si la llamada falla, el conjunto queda **vacío** a propósito: la interfaz oculta todo en vez de
-mostrar acciones de forma optimista. Todo botón protegido termina haciendo la misma pregunta:
-`Has(recurso, scope)`.
+Caché en el cliente de lo que el usuario puede hacer, con dos formas de consultarla según la
+granularidad:
+
+- **`Has(recurso, scope)`** — para detalles dentro de una página (los botones de una tarjeta).
+  Se resuelve contra la lista que se pidió una sola vez a `/api/permissions/me`, aplanada a
+  cadenas `Recurso:scope`. Emite un evento para que los componentes se redibujen al llegar.
+- **`CanAsync(ruta, método)`** — para el acceso a una página completa. Delega la decisión al
+  servidor (`#5.12-permission-check-api`), de modo que la página nunca nombra un recurso ni un
+  scope. Cada par ruta+método se pregunta una sola vez por sesión.
+
+Si cualquiera de las dos llamadas falla, la respuesta es **denegar**: la interfaz oculta en
+lugar de mostrar de forma optimista, igual que hace el servidor.
 
 > **Ocultar un botón no es seguridad.** Es comodidad. La API vuelve a preguntar a Keycloak en
 > cada petición, así que un usuario que llame al endpoint directamente recibe 403 igualmente.
+
+### `#5.11-page-guards`
+**Archivo:** [RouteGuard.razor](../InventoryManagement/src/InventorySystem.Client/Authorization/RouteGuard.razor)
+
+Impide que una página se abra escribiendo su URL directamente. `@attribute [Authorize]` solo
+comprueba que haya sesión iniciada, no qué permisos tiene el usuario: sin este guard, un usuario
+de perfil *staff* podía entrar a `/create`, `/edit/5` o `/audit` y ver la pantalla, aunque la API
+después rechazara sus acciones.
+
+Lo importante es **cómo** lo declara. La página no dice qué permiso necesita, sino **qué llamada
+hace**:
+
+```razor
+<RouteGuard Path="/api/product" Method="POST" Action="create products">
+    ...contenido de la página...
+</RouteGuard>
+```
+
+"Esta pantalla hace `POST /api/product`" es un hecho sobre la página, no una política. Quién
+puede hacerlo lo decide Keycloak, así que en el cliente no aparece ningún nombre de recurso ni
+de scope, y cambiar una política en la consola de Keycloak cambia el comportamiento sin
+recompilar.
+
+Tiene dos modos de uso: envolviendo el contenido (lo oculta y muestra el aviso), o suelto
+(`<RouteGuard Path="..." />`) para páginas que ya tienen su propia cadena de condiciones, como
+auditoría y movimientos. Mientras la respuesta no llega no dibuja ninguna de las dos ramas, para
+evitar que a un administrador le parpadee un "acceso restringido" antes del contenido.
+
+### `#5.12-permission-check-api`
+**Archivo:** [PermissionsController.cs](../InventoryManagement/src/InventorySystem.Server/Controllers/PermissionsController.cs) · `GET /api/permissions/check?path=…&method=…`
+
+El pre-vuelo que hace posible lo anterior: responde si el usuario **podría** realizar una llamada,
+sin realizarla. Recibe la ruta y el verbo, deriva el scope con `#5.12-scope-convention` y se lo
+pregunta a Keycloak con el mismo `EvaluateAsync` (`#5.3-keycloak-decision`) que usa el middleware
+real. Por construcción, la respuesta no puede discrepar de lo que haría la petición verdadera.
+
+Devuelve un booleano crudo (`true` / `false`), sin objeto de transferencia: la respuesta es un
+solo bit y no justifica un tipo propio. Solo acepta rutas que empiecen por `/api/`.
+
+### `#5.12-scope-convention`
+**Archivo:** [AuthorizationConstants.cs](../InventoryManagement/src/InventorySystem.Shared/Authorization/AuthorizationConstants.cs)
+
+La regla verbo → scope (GET/HEAD → `view`, DELETE → `delete`, el resto → `manage`) escrita **una
+sola vez**. Antes vivía duplicada dentro del middleware; al extraerla, tanto la evaluación real
+(`#5.2-policy-middleware`) como el pre-vuelo la comparten, de modo que la interfaz no puede
+asumir una regla distinta de la que se aplica de verdad.
+
+Si en el futuro algún endpoint necesitara un scope que su verbo no expresa (por ejemplo un `POST`
+que aprueba en lugar de crear), la forma de resolverlo sería un atributo que anule esta
+convención. No existe hoy porque ningún endpoint lo requiere.
 
 ### `#5.9-cors`
 **Archivo:** [Program.cs](../InventoryManagement/src/InventorySystem.Server/Program.cs)
