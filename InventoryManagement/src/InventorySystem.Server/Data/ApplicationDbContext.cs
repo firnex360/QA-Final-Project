@@ -17,9 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // A SKU is how the business identifies a product, so the database itself must refuse a
-        // second product that reuses one. 
+        
         modelBuilder.Entity<Product>().Property(p => p.CodeSKU).IsRequired();
         modelBuilder.Entity<Product>().HasIndex(p => p.CodeSKU).IsUnique();
 
