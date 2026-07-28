@@ -238,13 +238,20 @@ app.Use(async (context, next) =>
 //                      endpoint can be executed after pasting a Keycloak token.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    
 }
+
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 if (app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
+}
+
+if (app.Environment.IsStaging())
+{
+    //app.UseHttpsRedirection();
 }
 
 // Enable CORS

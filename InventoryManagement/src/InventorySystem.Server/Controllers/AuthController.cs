@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
         // and is deliberately unauthenticated, which is acceptable for test tooling but not
         // something a production deployment should expose. Outside Development it answers as
         // though the route does not exist, rather than 403, so it reveals nothing.
-        if (!_environment.IsDevelopment())
+        if (!_environment.IsDevelopment() || !_environment.IsStaging())
             return NotFound();
 
         // Use InternalAuthority (keycloak:8080 in Docker) for the server-to-server call.
