@@ -26,8 +26,10 @@ códigos de estado); estos documentos están en **español** y explican qué hac
 | [04 · Interfaz y Dashboard](04-interfaz-usuario.md) | Alcance Funcional §4 — tablero de control, indicadores y usabilidad | `#4.x` |
 | [05 · Roles y Seguridad](05-roles-y-seguridad.md) | Modelo granular obligatorio y Seguridad — Keycloak, OAuth2, JWT, scopes y policies | `#5.x` |
 | [06 · Observabilidad y Telemetría](06-observabilidad-telemetria.md) | Observabilidad — OpenTelemetry, Prometheus, Tempo, Loki, Alloy, Grafana y Alertmanager | `#6.x` |
+| [07 · Guía de Pruebas](07-guia-de-pruebas.md) | Full Stack Testing — dónde está cada tipo de prueba, cómo ejecutarla y qué cubre | — |
 
-> La documentación de **pruebas** (Full Stack Testing) no está incluida en esta serie.
+> El documento 07 es una guía, no un índice de anclas: las pruebas ya están separadas por proyecto
+> y por archivo, así que la unidad útil ahí es el proyecto y no la línea de código.
 
 ## Arranque rápido
 
