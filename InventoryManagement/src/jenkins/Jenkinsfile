@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOTNET = 'dotnet' // Simplified since we mapped /usr/bin/dotnet globally in the Jenkins Dockerfile
+        DOTNET = 'dotnet' 
         DOTNET_CLI_TELEMETRY_OPTOUT = '1'
         TESTCONTAINERS_RYUK_DISABLED = 'true'
         TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = '/var/run/docker.sock'
