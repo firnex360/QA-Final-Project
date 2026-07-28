@@ -5,28 +5,13 @@ using Microsoft.Extensions.Options;
 namespace InventorySystem.Server.Authorization;
 
 // #5.2-policy-middleware
-// The single choke point where authorization is enforced. For every /api/ request it
-// derives the scope from the HTTP verb (GET/HEAD→view, DELETE→delete, else→manage,
-// overridable with [RequiresScope]) and asks Keycloak whether this token may perform
-// that scope on that path (#5.3-keycloak-decision).
-//
-// The path is lowercased before evaluation, because Keycloak matches Resource URIs
-// case-sensitively and MVC routes are not (/api/Product and /api/product are the same
-// endpoint but would otherwise be two different resources).
-//
-// Fails CLOSED: an unreachable Keycloak, an unmatched URI or an ambiguous answer all
-// result in denial. NoResourceDefined is logged distinctly because it means the
-// Resource has not been created in Keycloak yet, which is easy to mistake for a
-// permissions problem.
-// Exempt from enforcement: /metrics, /openapi, /scalar, /health and /api/permissions
-// (gating the latter would be circular — it reports the caller's own grants).
 
 /// <summary>
-/// Enforces Keycloak-defined policies on every API request.
+/// For every /api/ request it enforces Keycloak-defined policies on every API request.
 ///
 /// The HTTP method determines the authorization scope (read vs write) and the request
 /// path identifies the resource, so protecting a new endpoint means creating a Resource
-/// in Keycloak — no code change here.
+/// in Keycloak.
 /// </summary>
 public sealed class PolicyEnforcementMiddleware(
     RequestDelegate next,
@@ -64,7 +49,11 @@ public sealed class PolicyEnforcementMiddleware(
         // Present on every real request; empty only under test authentication schemes.
         var token = ExtractBearerToken(context) ?? string.Empty;
         var path = (context.Request.Path.Value ?? "/").ToLowerInvariant();
-        var scope = ScopeForRequest(context);
+
+        // Reads are "view", deletes are "delete" (so removal can be restricted separately
+        // from editing), other writes are "manage". Shared with the pre-flight check
+        // endpoint so both apply the identical rule.
+        var scope = Scopes.ForMethod(context.Request.Method);
 
         var decision = await decisions.EvaluateAsync(token, path, scope, context.RequestAborted);
 
@@ -112,22 +101,6 @@ public sealed class PolicyEnforcementMiddleware(
             return false;
 
         return true;
-    }
-
-    /// <summary>
-    /// Resolves the scope to ask Keycloak for. An explicit [RequiresScope] wins;
-    /// otherwise the HTTP verb decides: reads are "view", deletes are "delete"
-    /// (so removal can be restricted separately from editing), and the remaining
-    /// write verbs are "manage".
-    /// </summary>
-    private static string ScopeForRequest(HttpContext context)
-    {
-        var declared = context.GetEndpoint()?.Metadata.GetMetadata<RequiresScopeAttribute>();
-        if (declared is not null)
-            return declared.Scope;
-
-        // Shared with the pre-flight check endpoint so both apply the identical rule.
-        return Scopes.ForMethod(context.Request.Method);
     }
 
     private static string? ExtractBearerToken(HttpContext context)

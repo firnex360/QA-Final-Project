@@ -16,7 +16,7 @@ public sealed class KeycloakAuthorizationOptions
 {
     public const string SectionName = "Keycloak";
 
-    /// <summary>Realm base URL, e.g. http://localhost:8080/realms/inventory-realm.</summary>
+    ///Realm base URL, e.g. http://localhost:8080/realms/inventory-realm.
     public string Authority { get; set; } = string.Empty;
 
     /// <summary>

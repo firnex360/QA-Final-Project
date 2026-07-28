@@ -68,6 +68,7 @@ stock y reportes. Cada endpoint está documentado en su sección correspondiente
 | `GET /api/audit` | Consulta de auditoría | `#2.4-audit-api` |
 | `GET /api/audit/stats` | Reporte de auditoría | `#2.4-audit-stats-api` |
 | `GET /api/permissions/me` | Permisos del usuario actual | `#5.6-permissions-api` |
+| `GET /api/permissions/check` | ¿Puedo realizar esta llamada? (pre-vuelo) | `#5.12-permission-check-api` |
 
 Ninguno de estos endpoints comprueba roles por su cuenta: todos pasan por el mismo middleware de
 autorización (`#5.2-policy-middleware`), que consulta a Keycloak.
