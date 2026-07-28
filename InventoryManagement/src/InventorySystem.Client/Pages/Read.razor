@@ -5,6 +5,18 @@
 @inject IJSRuntime JS
 @inject PermissionStore Permissions
 
+@* #1.4-list-ui
+   "Visualizar Productos" — route /read. The main product screen.
+
+   Every list operation is server-side: this page only holds the filter state,
+   turns it into a query string (#1.4-list-ui-load) and renders one page of results.
+
+   Page size: 8 cards per page.
+   Pieces: search (#1.4.1-search-ui), filters (#1.4.2-filters-ui),
+           sorting (#1.4.3-sorting-ui), pager (#1.4.4-pagination-ui),
+           details popup (#1.5-details-modal), delete (#1.3-delete-ui).
+   Action buttons render per Keycloak scope (#1.6-product-permissions). *@
+
 <PageTitle>Read</PageTitle>
 
 <div class="page-header">
@@ -19,12 +31,16 @@
 </div>
 
 <div class="filter-bar">
+    @* #1.4.1-search-ui — searches Name, SKU and Description (#1.4.1-search).
+       Typing is debounced 400 ms and always resets to page 1 (see OnSearchInput). *@
     <div class="filter-search">
         <span class="filter-search-icon">🔍</span>
         <input class="form-control" type="search" placeholder="Search by name, SKU, or description..."
                value="@searchTerm" @oninput="OnSearchInput" aria-label="Search products" />
     </div>
 
+    @* #1.4.2-filters-ui — low-stock chip + category popup, both map to #1.4.2-filters.
+       The chip shows the live low-stock count pulled from /api/product/stats. *@
     <!-- Low stock filter chip -->
     <button class="btn filter-chip @(lowStockOnly ? "is-on" : "")" @onclick="ToggleLowStock"
             title="Show only products at or below their minimum stock level">
@@ -56,6 +72,8 @@
         }
     </div>
 
+    @* #1.4.3-sorting-ui — sort key + direction, maps to #1.4.3-sorting.
+       Keys offered: Name, Price, Quantity, Category, SKU. *@
     <!-- Sort -->
     <div class="filter-menu-wrap">
         <button class="btn filter-icon-btn @(HasCustomSort ? "is-active" : "")"
@@ -147,6 +165,9 @@ else
                     </div>
                 </div>
 
+                @* #2.1-adjust-ui — the +/− stock buttons open an inline panel where the
+                   user types an amount; ConfirmAdjust sends it to #2.1-adjust-api and
+                   shows a toast with the "before → after" quantities. *@
                 <!-- Actions render only for the scopes Keycloak grants this user -->
                 <!-- stopPropagation so using these controls doesn't also open the details popup -->
                 <div class="stock-actions" @onclick:stopPropagation="true">
@@ -195,6 +216,8 @@ else
         }
     </div>
 
+    @* #1.4.4-pagination-ui — renders the metadata from #1.0-paged-response.
+       Buttons disable at the first/last page; each click refetches from the server. *@
     <div class="pager-bar">
         <button class="btn btn-sm btn-outline-secondary" disabled="@(currentPage == 1)" @onclick="PrevPage">‹ Previous</button>
         <span class="page-info">Page @currentPage of @totalPages</span>
@@ -202,7 +225,12 @@ else
     </div>
 }
 
-@* Read-only details popup — a quick way to see the full product info without opening Edit. *@
+@* #1.5-details-modal
+   Read-only details popup — the full product info without opening Edit.
+   Opens by clicking anywhere on a card; the action buttons stopPropagation so
+   using them doesn't trigger it. Closes via the ×, the Close button, or the backdrop.
+   Shows the untruncated Description plus Price, on-hand, minimum stock and
+   stock value (Price × Quantity). The Edit shortcut only renders with product:manage. *@
 @if (detailsProduct is not null)
 {
     <div class="product-modal-backdrop" @onclick="CloseDetails">
@@ -322,6 +350,14 @@ else
         !string.IsNullOrWhiteSpace(searchTerm) || HasCategoryFilter || HasCustomSort || lowStockOnly;
 
     // ── Stock state helpers ─────────────────────────────────────────
+    // #2.2-low-stock-alerts
+    // "Alertas por stock mínimo". Three states drive both the card's colour accent
+    // and its badge:
+    //   Quantity == 0                  → out of stock (red)
+    //   Quantity <= MinimumStockLevel  → low stock    (amber)
+    //   otherwise                      → in stock     (green)
+    // The same rule exists server-side as LowStockOnly (#1.4.2-filters) and as the
+    // LowStockCount/CriticalProducts figures on the dashboard (#4.1-dashboard-stats).
     private static string StockStateClass(Product p) =>
         p.Quantity == 0 ? "stock-state-out"
         : p.Quantity <= p.MinimumStockLevel ? "stock-state-low"
@@ -501,8 +537,10 @@ else
     }
 
     // ── Data loading ────────────────────────────────────────────────
-    // Builds the query string the server's ProductQueryParameters binds from.
-    // Only non-default values are included, keeping URLs clean.
+    // #1.4-list-ui-load
+    // Builds the query string that binds to ProductQueryParameters (#1.0-query-params)
+    // and calls #1.4-list-api. Only non-default values are appended, keeping URLs clean.
+    // Fixed page size: 8. Search and category values are URL-escaped.
     private string BuildQuery(int page)
     {
         var query = $"api/product?pageNumber={page}&pageSize={pageSize}";
@@ -558,9 +596,14 @@ else
         }
     }
 
+    // #1.6-product-permissions
     // What the user may do comes from Keycloak (via /api/permissions/me), not from
     // anything declared in this project. Presentation only — the API enforces the same
     // policies, so hiding a button is convenience, not security.
+    //
+    //   Products:manage    → Create / Edit buttons
+    //   Products:delete    → Delete button (separate from manage on purpose)
+    //   ProductStock:manage → the +/− stock buttons
     private bool canManageProducts => Permissions.Has(Resources.Products, Scopes.Manage);
     private bool canDeleteProducts => Permissions.Has(Resources.Products, Scopes.Delete);
     private bool canManageStock => Permissions.Has(Resources.ProductStock, Scopes.Manage);
@@ -578,6 +621,11 @@ else
         NavigationManager.NavigateTo($"/edit/{product.Id}");
     }
 
+    // #1.3-delete-ui
+    // "Eliminar Producto" — asks for confirmation, calls #1.3-delete-api, then reloads
+    // the current page and stats. Reloading (rather than removing the card locally)
+    // keeps the pager counts correct; the server clamps the page number, so deleting
+    // the last item on the last page falls back safely (#1.4.4-pagination).
     private async Task DeleteProduct(Product product)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'??? This cannot be undone, pal.");

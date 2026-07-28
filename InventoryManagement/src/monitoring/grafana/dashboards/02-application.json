@@ -1,5 +1,6 @@
 {
   "annotations": { "list": [] },
+  "description": "#6.8-dash-app — Application: throughput, latency p50/p95/p99, error rate, status codes, top endpoints, Npgsql connection pool and a live Loki log panel.",
   "editable": true,
   "graphTooltip": 0,
   "links": [],

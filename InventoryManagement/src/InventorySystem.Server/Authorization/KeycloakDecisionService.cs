@@ -6,11 +6,13 @@ using Microsoft.Extensions.Options;
 
 namespace InventorySystem.Server.Authorization;
 
+// #5.3-keycloak-decision
+// Talks to Keycloak Authorization Services over the UMA ticket grant.
+
 /// <summary>
 /// Evaluates each request against Keycloak Authorization Services using the UMA
 /// ticket grant. Keycloak matches the request path against the URIs defined on its
-/// Resources, then runs the Permissions/Policies bound to them — so the whole
-/// authorization matrix lives in Keycloak, not in this codebase.
+/// Resources, then runs the Permissions/Policies bound to them.
 ///
 /// Only the caller's own access token is sent; no client secret is required.
 /// </summary>

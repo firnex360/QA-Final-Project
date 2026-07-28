@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InventorySystem.Server.Data;
 
+// #2.4-audit-dbcontext
+// Inheriting from Audit.NET's AuditDbContext (instead of plain DbContext) is what makes
+// auditing automatic: every SaveChanges/SaveChangesAsync on any tracked entity produces
+// an AuditLog row. No service or controller has to remember to record anything.
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : AuditDbContext(options)
 {
     public DbSet<Product> Products { get; set; } = null!;
@@ -13,9 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // A SKU is how the business identifies a product, so the database itself must refuse a
-        // second product that reuses one. 
+        
         modelBuilder.Entity<Product>().Property(p => p.CodeSKU).IsRequired();
         modelBuilder.Entity<Product>().HasIndex(p => p.CodeSKU).IsUnique();
 

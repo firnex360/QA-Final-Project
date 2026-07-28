@@ -1,5 +1,13 @@
 namespace InventorySystem.Server.Authorization;
 
+// #5.10-keycloak-options
+// Bound from the "Keycloak" configuration section (appsettings + compose env vars).
+//   Authority         — realm URL as the browser sees it (issuer of the token)
+//   InternalAuthority — realm URL for server-to-server calls; in Docker the API cannot
+//                       reach "localhost", so this is the container name
+//   Audience          — the resource-server client owning the Resources/Policies
+//   EnforcementEnabled— turned off in tests so the suite needs no live Keycloak
+
 /// <summary>
 /// Settings for Keycloak Authorization Services (UMA) policy evaluation.
 /// Bound from the "Keycloak" configuration section.
@@ -8,7 +16,7 @@ public sealed class KeycloakAuthorizationOptions
 {
     public const string SectionName = "Keycloak";
 
-    /// <summary>Realm base URL, e.g. http://localhost:8080/realms/inventory-realm.</summary>
+    ///Realm base URL, e.g. http://localhost:8080/realms/inventory-realm.
     public string Authority { get; set; } = string.Empty;
 
     /// <summary>

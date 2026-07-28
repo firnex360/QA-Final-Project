@@ -17,10 +17,11 @@ using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-// Declare the JWT Bearer scheme so Scalar shows an "Authorize" box and actually
-// sends the Authorization header (otherwise every protected endpoint returns 401).
+// #3.1-openapi-config
+// Generates the OpenAPI document that documents the whole REST API.
+// The transformer declares the JWT Bearer scheme (#3.3-bearer-scheme); without it the
+// interactive docs have no "Authorize" box and never send the Authorization header,
+// so every protected endpoint would answer 401.
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
@@ -39,7 +40,9 @@ builder.Services.AddScoped<IProductService, ProductService>();
 // Register IHttpContextAccessor so Audit.NET can read the current user
 builder.Services.AddHttpContextAccessor();
 
-// Configure CORS to allow the Blazor client to call this API
+// #5.9-cors
+// Allow-list of origins permitted to call this API from a browser: the Blazor client
+// in dev (5167/7141) and in Docker (9090). Any other origin is refused by the browser.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
@@ -54,6 +57,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+// #5.1-jwt-auth
+// Authentication: validates the Keycloak-issued JWT on every request (OAuth2 + JWT).
+// Key settings:
+//   Authority/MetadataAddress — where the signing keys are fetched from. These differ
+//     in Docker because the browser reaches Keycloak at localhost:8080 while the API
+//     must use the container name.
+//   MapInboundClaims = false — keeps claim names as Keycloak sends them, so
+//     RoleClaimType "roles" actually matches instead of being remapped to a legacy URI.
+//   ValidateAudience = false — the token is minted for the client, not the API; the API
+//     authorizes by asking Keycloak for a decision instead (#5.2-policy-middleware).
+// Token lifetime and session expiry are configured in Keycloak, not here.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -73,16 +87,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// #5.0-authz-registration
 // Authorization is delegated to Keycloak Authorization Services: Resources (matched by
 // request URI), Scopes, Policies and Permissions all live in the Keycloak admin console.
 // PolicyEnforcementMiddleware asks Keycloak for a decision on every API request, so
 // changing who can do what needs no code change and takes effect immediately.
+// This is the granular model the brief demands — no endpoint checks a role name.
 builder.Services.AddAuthorization();
 builder.Services.Configure<KeycloakAuthorizationOptions>(
     builder.Configuration.GetSection(KeycloakAuthorizationOptions.SectionName));
 builder.Services.AddHttpClient<IAuthorizationDecisionService, KeycloakDecisionService>();
 
-// OpenTelemetry Configuration Stuff
+// #6.1-otel-config
+// OpenTelemetry — the instrumentation required by the brief. All three signals are
+// exported over OTLP to Grafana Alloy (OTLP:Endpoint, http://alloy:4317 in Docker),
+// which fans them out to Tempo/Loki/Prometheus (#6.3-alloy-pipeline).
+//
+//   Traces  → ASP.NET Core (with exceptions recorded), HttpClient (external calls),
+//             and EF Core with SQL statement text (database tracing).
+//   Metrics → ASP.NET Core, HttpClient, .NET runtime (CPU/GC/threads) and the Npgsql
+//             meter, which supplies the required database connection-pool figures.
+//   Logs    → exported with formatted message and scopes, so traceId/spanId travel
+//             with each record and Loki can link back to Tempo.
+//
+// The service is identified as "InventoryServer" v1.0.0 in every signal.
 var otelResource = ResourceBuilder.CreateDefault()
     .AddService(serviceName: "InventoryServer", serviceVersion: "1.0.0");
 
@@ -130,17 +158,23 @@ builder.Logging.AddOpenTelemetry(logging =>
 });
 
 
-// Custom Prometheus counter: one increment per audited entity change,
-// labelled by action and entity so Grafana can chart business activity.
+// #6.2-business-metric
+// Custom Prometheus counter: one increment per audited entity change, labelled by
+// action and entity. This is the business metric behind the Grafana "Business"
+// dashboard (products created, stock updates, deletions).
+// Exposed on /metrics (#6.2-metrics-endpoint) and collected by Alloy.
 var auditEventsCounter = Metrics.CreateCounter(
     "inventory_audit_events_total",
     "Total number of audited entity changes.",
     new CounterConfiguration { LabelNames = ["action", "entity"] });
 
-// Audit.NET Configuration 
-// Tell Audit.NET to store audit events in the AuditLogs table
-// via the same ApplicationDbContext. Every SaveChanges/SaveChangesAsync
-// call on any audited entity will automatically produce an AuditLog record.
+// #2.4-audit-config
+// Audit.NET configuration — maps every tracked entity change onto an AuditLog row
+// (#2.4-audit-entity) in the same ApplicationDbContext.
+// For each change it records: entity name, primary key, action (Insert/Update/Delete),
+// UTC timestamp, the acting user taken from the Keycloak JWT ("anonymous" if absent),
+// and JSON snapshots — OldValues/NewValues/AffectedColumns, populated per action type.
+// It also increments the Prometheus counter that feeds the business dashboard.
 Audit.Core.Configuration.Setup()
     .UseEntityFramework(ef => ef
         .AuditTypeMapper(_ => typeof(AuditLog))
@@ -197,6 +231,11 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
+// #3.2-openapi-ui
+// Interactive API documentation, development only:
+//   /openapi/v1.json — the raw OpenAPI document
+//   /scalar          — the browsable UI (Scalar, equivalent to Swagger UI) where every
+//                      endpoint can be executed after pasting a Keycloak token.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -211,7 +250,10 @@ if (app.Environment.IsProduction())
 // Enable CORS
 app.UseCors("AllowBlazorClient");
 
-// Record HTTP request metrics (rate, duration, status) for Prometheus
+// #6.2-metrics-endpoint (middleware half)
+// Records HTTP metrics per request — rate, duration histogram and status code —
+// under http_request_duration_seconds_*. These power the throughput, latency
+// percentile and error-rate panels, and the alert rules (#6.5-alert-rules).
 app.UseHttpMetrics();
 
 // Middleware to inject IHttpContextAccessor into Audit.NET's custom fields
@@ -235,7 +277,10 @@ app.UseMiddleware<PolicyEnforcementMiddleware>();
 // Map controller endpoints
 app.MapControllers();
 
-// Expose Prometheus metrics at /metrics for scraping
+// #6.2-metrics-endpoint
+// Exposes /metrics in Prometheus text format. NOTE: Prometheus does not scrape this
+// directly — Alloy does, and forwards it by remote-write (#6.3-alloy-pipeline), so all
+// telemetry reaches Prometheus through the collector.
 app.MapMetrics();
 
 app.Run();

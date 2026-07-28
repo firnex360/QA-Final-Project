@@ -20,38 +20,54 @@ public class ProductService(ApplicationDbContext context) : IProductService
     {
         return await _context.Products.FindAsync(id);
     }
-    //dead code, no longer used, but kept for reference
+
+    // Superseded by GetProductsFilterAsync; kept only because it is part of IProductService.
     public async Task<List<Product>> GetAllProductsAsync()
     {
         return await _context.Products.ToListAsync();
     }
 
+    // #1.4-list-service
+    // Builds the product list query for GET /api/product (#1.4-list-api).
+    //
+    // Everything is composed onto a single IQueryable and executed once, so searching,
+    // filtering, sorting and paging all run in SQL on the database — never in memory.
+    // Order matters: narrow the rows first (search → filters), then sort, then page.
+    //
+    // Limits applied here: PageSize is clamped to 1..50 and PageNumber is clamped to
+    // the available range, so hand-edited query strings can't request 10,000 rows or
+    // a page that doesn't exist.
     public async Task<PagedResponse<Product>> GetProductsFilterAsync(ProductQueryParameters p)
     {
         IQueryable<Product> query = _context.Products;
 
-        // Search across Name, CodeSKU, Description ...
+        // #1.4.1-search
+        // Case-insensitive "contains" across Name, CodeSKU and Description.
+        // Both sides are lowered so the match is case-insensitive regardless of DB collation.
         if (!string.IsNullOrWhiteSpace(p.SearchTerm))
         {
             var term = p.SearchTerm.ToLower();
-            
+
             query = query.Where(x =>
                 (x.Name != null && x.Name.ToLower().Contains(term)) ||
                 (x.CodeSKU != null && x.CodeSKU.ToLower().Contains(term)) ||
                 (x.Description != null && x.Description.ToLower().Contains(term))
             );
-
         }
 
-        // Filter by category
+        // #1.4.2-filters
+        // Two independent, combinable filters:
+        //   Category     → exact match on the category name
+        //   LowStockOnly → only products at or below their minimum stock level
         if (!string.IsNullOrWhiteSpace(p.Category))
             query = query.Where(x => x.Category == p.Category);
 
-        // Only products at or below their minimum stock level
         if (p.LowStockOnly)
             query = query.Where(x => x.Quantity <= x.MinimumStockLevel);
 
-        // Sorting
+        // #1.4.3-sorting
+        // Accepted SortBy values: price, quantity, category, codesku — anything else
+        // (including null) falls through to Name. SortDescending flips the direction.
         query = (p.SortBy?.ToLower()) switch
         {
             "price"    => p.SortDescending ? query.OrderByDescending(x => x.Price)    : query.OrderBy(x => x.Price),
@@ -61,6 +77,10 @@ public class ProductService(ApplicationDbContext context) : IProductService
             _          => p.SortDescending ? query.OrderByDescending(x => x.Name)     : query.OrderBy(x => x.Name),
         };
 
+        // #1.4.4-pagination
+        // TotalCount is counted AFTER search/filters so the pager reflects the filtered
+        // set. PageSize is capped at 50; CurrentPage is clamped into range, which is why
+        // deleting the last row on the last page safely falls back instead of 404-ing.
         var totalCount = await query.CountAsync();
         var pageSize = Math.Clamp(p.PageSize, 1, 50);
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -80,6 +100,15 @@ public class ProductService(ApplicationDbContext context) : IProductService
         };
     }
 
+    // #4.1-dashboard-stats
+    // Computes the dashboard figures in one pass over the catalogue:
+    //   Totals      — total / active / inactive products
+    //   Alerts      — LowStockCount (Quantity <= MinimumStockLevel) and OutOfStockCount
+    //                 (Quantity == 0). NOTE: low stock INCLUDES out of stock.
+    //   Money       — TotalInventoryValue and ValueByCategory (sum of Price × Quantity)
+    //   Breakdowns  — ByCategory (product counts per category)
+    //   Critical    — the 8 most urgent products, ranked by how far below their minimum
+    //                 they are; this is the "productos críticos" watchlist.
     public async Task<ProductStatsDto> GetProductStatsAsync()
     {
         var products = await _context.Products.ToListAsync();
@@ -124,7 +153,12 @@ public class ProductService(ApplicationDbContext context) : IProductService
         await _context.SaveChangesAsync();
     }
     
-    // Quick stock movement: positive delta = stock in, negative = stock out.
+    // #2.1-adjust-service
+    // Applies a stock movement: positive delta = stock in, negative = stock out.
+    // Guard rail: the resulting quantity may never go below zero — the attempt throws
+    // InvalidOperationException (surfaced as 400) and nothing is saved.
+    // No movement table is written here; SaveChangesAsync triggers the audit interceptor
+    // (#2.4-audit-config), and the movement history is derived from it (#2.3-movements-derive).
     public async Task<Product?> AdjustStockAsync(int id, int delta)
     {
         var product = await _context.Products.FindAsync(id);

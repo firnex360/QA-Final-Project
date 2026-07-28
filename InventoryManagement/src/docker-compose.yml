@@ -1,5 +1,13 @@
+# #6.11-compose-stack
+# The full stack. Host ports:
+#   9090 client (Blazor)      8090 server (API)        8080 keycloak
+#   5454 postgres             3000 grafana             3300 prometheus
+#   9093 alertmanager         3100 loki                3200 tempo
+#   4317/4318 alloy OTLP      3800 alloy UI
+# Services reach each other by container name on the compose network, which is why
+# configs say prometheus:3300 and not localhost.
 services:
-  # PostgreSQL Database 
+  # PostgreSQL Database
   db:
     image: postgres:18.4
     container_name: inventory-db

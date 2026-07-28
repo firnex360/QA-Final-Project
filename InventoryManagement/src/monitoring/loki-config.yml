@@ -1,3 +1,7 @@
+# #6.9-loki-config
+# Log store, single-binary mode on :3100. Filesystem storage with an in-memory ring —
+# fine for a course/demo stack, not for production. Receives logs pushed by Alloy;
+# each record carries service_name, level and the trace_id used to link back to Tempo.
 auth_enabled: false
 
 server:

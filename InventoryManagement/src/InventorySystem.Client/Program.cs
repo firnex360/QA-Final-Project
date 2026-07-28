@@ -14,6 +14,15 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // API base URL: reads from appsettings.json ("ApiBaseUrl"), falls back to same-origin for Docker
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
 
+// #5.8-client-oidc
+// Browser-side login via OpenID Connect against Keycloak, using Authorization Code +
+// PKCE (ResponseType "code" — no secret is ever shipped to the browser).
+// Settings come from wwwroot/appsettings.json, so the realm/client are not hardcoded.
+// Access tokens are attached to API calls by ApiAuthorizationMessageHandler, and the
+// library silently renews them from the refresh token; when renewal fails the user is
+// sent back to Keycloak to log in again (session expiry).
+// The custom claims factory unpacks Keycloak's "roles" JSON array into individual role
+// claims, which is what makes AuthorizeView/IsInRole work.
 builder.Services.AddOidcAuthentication(options =>
 {
     builder.Configuration.Bind("Keycloak", options.ProviderOptions);

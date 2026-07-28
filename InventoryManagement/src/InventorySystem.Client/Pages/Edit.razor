@@ -4,6 +4,17 @@
 @inject NavigationManager Navigation
 @inject PermissionStore Permissions
 
+@* #1.2-edit-ui
+   "Editar Producto" form — route /edit/{id}.
+
+   On load, fetches the product by id (#1.4-get-by-id-api) and prefills the form;
+   shows "Product not found" when the fetch returns nothing. Saving runs the same
+   validation as create, PUTs to #1.2-edit-api, and on success navigates back to
+   /read so the user sees the updated list.
+
+   Reached from the Edit button on a product card or from the details popup
+   (#1.5-details-modal), both of which require product:manage. *@
+
 <PageTitle>Edit Product</PageTitle>
 
 <h1>Edit Product</h1>

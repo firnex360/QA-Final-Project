@@ -10,8 +10,13 @@
 @implements IDisposable
 @inject PermissionStore Permissions
 
-@* Links render from the permissions Keycloak grants at runtime — nothing here is
-   registered in code, so changing a policy in Keycloak changes this menu. *@
+@* #4.3-nav-menu
+   Navigation. Every link is wrapped in a permission check, so the menu only offers what
+   the user can actually reach:
+     ProductStats:view → Home        Audit:view     → Stock Movements + Audit
+     Products:manage   → Create      Products:view  → Read
+   Nothing here is registered in code — changing a policy in Keycloak changes this menu
+   with no redeploy (#5.7-permission-store). *@
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="nav flex-column">
         @if (Permissions.Has(Resources.ProductStats, Scopes.View))

@@ -1,4 +1,12 @@
 namespace InventorySystem.Shared.Models;
+
+// #1.0-product-model
+// The product entity. Shared by client and server, and mapped straight to the
+// "Products" table by EF Core, so this class defines the database columns too.
+//
+// Fields required by the spec: Name, CodeSKU, Description, Category, Price,
+// Quantity (initial stock), MinimumStockLevel, IsActive (estado activo/inactivo).
+// Validation rules live in the API (#1.1-create-api / #1.2-edit-api), not here.
     public class Product
     {
         public int Id { get; set;}

@@ -4,6 +4,15 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject PermissionStore Permissions
 
+@* #2.4-audit-ui
+   Audit trail viewer — route /audit. Satisfies the "Auditoría" requirement.
+
+   KPI cards (total / today / last 7 days) and three charts from #2.4-audit-stats-api,
+   plus a paginated table (5 rows) from #2.4-audit-api.
+   Each row renders the raw OldValues/NewValues JSON as "field: old → new" pills, so a
+   change is readable without inspecting JSON. Malformed JSON renders as nothing rather
+   than breaking the page. *@
+
 <PageTitle>Audit Log</PageTitle>
 
 <div class="page-header">

@@ -3,6 +3,18 @@
 @inject HttpClient Http
 @inject PermissionStore Permissions
 
+@* #2.3-movements-ui
+   "Historial de Movimientos" — route /stock-movements.
+
+   Shows the required columns: fecha, usuario, producto, tipo de movimiento and the
+   cantidad anterior → cantidad nueva transition, plus the signed units.
+   KPI cards: total movements, units in, units out, last 7 days.
+   Charts: movements by type (donut), 7-day activity (line), most sold (bar).
+   Table pages 5 rows at a time.
+
+   Data comes from #2.3-movements-api and #2.3-movements-stats-api, both derived from
+   the audit log — so this page is gated on audit:view, not stock:view. *@
+
 <PageTitle>Stock Movements</PageTitle>
 
 <div class="page-header">

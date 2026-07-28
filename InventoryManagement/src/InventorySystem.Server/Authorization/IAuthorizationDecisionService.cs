@@ -7,18 +7,10 @@ namespace InventorySystem.Server.Authorization;
 /// </summary>
 public enum AuthorizationDecision
 {
-    /// <summary>Keycloak evaluated the policies and permitted the request.</summary>
-    Allowed,
-
-    /// <summary>A resource matched, but its policies denied the request.</summary>
-    Denied,
-
-    /// <summary>
-    /// No Keycloak resource matches the request path. Treated as a denial (fail closed),
-    /// but reported separately because it almost always means the resource simply
-    /// hasn't been created in Keycloak yet.
-    /// </summary>
-    NoResourceDefined
+    
+    Allowed, ///Keycloak evaluated the policies and permitted the request.
+    Denied, /// A resource matched, but its policies denied the request.
+    NoResourceDefined /// No Keycloak resource matches the request path.
 }
 
 /// <summary>

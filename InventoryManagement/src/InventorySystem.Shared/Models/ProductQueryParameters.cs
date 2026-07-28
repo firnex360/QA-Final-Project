@@ -1,5 +1,10 @@
 namespace InventorySystem.Shared.Models;
 
+// #1.0-query-params
+// Bound from the query string of GET /api/product (#1.4-list-api).
+// Defaults: PageNumber=1, PageSize=10, no search, no filters, sort by Name ascending.
+// Consumed by ProductService.GetProductsFilterAsync (#1.4-list-service).
+
 /// <summary>
 /// Query parameters for server-side pagination, searching, filtering, and sorting.
 /// All properties are optional — defaults return page 1 with 10 items, no filters.
