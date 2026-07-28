@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using InventorySystem.Server.Authorization;
 using InventorySystem.Server.Controllers;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -17,6 +18,7 @@ namespace unit_testing;
 public class AuthControllerTests
 {
     private readonly IOptions<KeycloakAuthorizationOptions> _options;
+    private readonly IWebHostEnvironment _environment;
 
     public AuthControllerTests()
     {
@@ -25,6 +27,11 @@ public class AuthControllerTests
             Authority = "http://localhost:8080/realms/inventory-realm",
             Audience = "inventory-client"
         });
+
+        // The token endpoint only responds in Development; these tests exercise that path.
+        var environmentMock = new Mock<IWebHostEnvironment>();
+        environmentMock.SetupGet(e => e.EnvironmentName).Returns("Development");
+        _environment = environmentMock.Object;
     }
 
     [Fact]
@@ -44,7 +51,7 @@ public class AuthControllerTests
         var factoryMock = new Mock<IHttpClientFactory>();
         factoryMock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-        var controller = new AuthController(factoryMock.Object, _options);
+        var controller = new AuthController(factoryMock.Object, _options, _environment);
         var loginRequest = new LoginRequest { Username = "staff", Password = "12345" };
 
         // Act
@@ -74,7 +81,7 @@ public class AuthControllerTests
         var factoryMock = new Mock<IHttpClientFactory>();
         factoryMock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-        var controller = new AuthController(factoryMock.Object, _options);
+        var controller = new AuthController(factoryMock.Object, _options, _environment);
         var loginRequest = new LoginRequest { Username = "staff", Password = "wrong-password" };
 
         // Act
@@ -102,7 +109,7 @@ public class AuthControllerTests
         var factoryMock = new Mock<IHttpClientFactory>();
         factoryMock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-        var controller = new AuthController(factoryMock.Object, _options);
+        var controller = new AuthController(factoryMock.Object, _options, _environment);
         var loginRequest = new LoginRequest { Username = "staff", Password = "12345" };
 
         // Act

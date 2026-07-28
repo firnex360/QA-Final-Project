@@ -44,7 +44,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5167", "https://localhost:7141", "http://localhost:9090")
+        policy.WithOrigins(
+                  "http://localhost:5167",
+                  "https://localhost:7141",
+                  "http://localhost:9090",
+                  "http://host.docker.internal:9090")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -184,6 +188,13 @@ Audit.EntityFramework.Configuration.Setup()
         .AuditEventType("{context}:{database}"));
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
+    await next();
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

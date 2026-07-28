@@ -25,13 +25,16 @@ public class AuthController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly KeycloakAuthorizationOptions _keycloak;
+    private readonly IWebHostEnvironment _environment;
 
     public AuthController(
         IHttpClientFactory httpClientFactory,
-        IOptions<KeycloakAuthorizationOptions> keycloakOptions)
+        IOptions<KeycloakAuthorizationOptions> keycloakOptions,
+        IWebHostEnvironment environment)
     {
         _httpClientFactory = httpClientFactory;
         _keycloak = keycloakOptions.Value;
+        _environment = environment;
     }
 
     /// <summary>
@@ -42,6 +45,13 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetToken([FromBody] LoginRequest request)
     {
+        // This endpoint takes a username and password directly (the OAuth2 password grant)
+        // and is deliberately unauthenticated, which is acceptable for test tooling but not
+        // something a production deployment should expose. Outside Development it answers as
+        // though the route does not exist, rather than 403, so it reveals nothing.
+        if (!_environment.IsDevelopment())
+            return NotFound();
+
         // Use InternalAuthority (keycloak:8080 in Docker) for the server-to-server call.
         // The issued token's issuer will still be localhost:8080 thanks to KC_HOSTNAME.
         var tokenUrl = _keycloak.TokenEndpoint;
