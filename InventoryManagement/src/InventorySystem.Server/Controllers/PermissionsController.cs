@@ -20,6 +20,8 @@ namespace InventorySystem.Server.Controllers;
 [ApiController]
 public class PermissionsController(IAuthorizationDecisionService decisions) : ControllerBase
 {
+    private const string BearerPrefix = "Bearer ";
+
     // GET api/permissions/me
     // Exempt from policy enforcement (see PolicyEnforcementMiddleware): it exposes only
     // the caller's own grants, so requiring a permission to read it would be circular.
@@ -28,8 +30,8 @@ public class PermissionsController(IAuthorizationDecisionService decisions) : Co
     public async Task<IActionResult> GetMyPermissions(CancellationToken cancellationToken)
     {
         var header = Request.Headers.Authorization.ToString();
-        var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? header["Bearer ".Length..].Trim()
+        var token = header.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase)
+            ? header[BearerPrefix.Length..].Trim()
             : string.Empty;
 
         var permissions = await decisions.GetGrantedPermissionsAsync(token, cancellationToken);
@@ -63,8 +65,8 @@ public class PermissionsController(IAuthorizationDecisionService decisions) : Co
             return BadRequest("Only '/api/...' paths can be checked.");
 
         var header = Request.Headers.Authorization.ToString();
-        var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? header["Bearer ".Length..].Trim()
+        var token = header.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase)
+            ? header[BearerPrefix.Length..].Trim()
             : string.Empty;
 
         // Lowercased to match how the middleware normalises paths before asking Keycloak.
