@@ -26,9 +26,8 @@
 
 @if (!canView)
 {
-    <div class="alert alert-warning" role="alert">
-        You don't have permission to view stock movements. Ask an administrator for the <code>audit:view</code> permission.
-    </div>
+    @* Renders the notice when denied, nothing while the answer is still pending. *@
+    <RouteGuard Path="/api/audit/stock-movements" Action="review stock movements" />
 }
 else
 {
@@ -156,9 +155,10 @@ else
     private const int pageSize = 5;
     private int currentPage = 1;
 
-    // These movements come from the audit trail, so the same permission gates them:
-    // presentation only — the API enforces audit:view too.
-    private bool canView => Permissions.Has(Resources.Audit, Scopes.View);
+    // #5.11-page-guards
+    // This page reads GET /api/audit/stock-movements, so it asks the server whether that
+    // call is allowed instead of naming a resource or scope.
+    private bool canView;
 
     private bool HasTypeData => stats is not null && stats.ByType.Any(t => t.Count > 0);
 
@@ -168,7 +168,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Permissions.EnsureLoadedAsync();
+        canView = await Permissions.CanAsync("/api/audit/stock-movements");
         if (!canView)
             return;
 

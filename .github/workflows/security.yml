@@ -1,0 +1,76 @@
+name: OWASP Security Scans
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  dependency-check:
+    name: OWASP Dependency-Check (SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@1e54355a8b4c8abaa8cc7d0b70aa655a3bb15a6c # main
+        with:
+          project: 'InventoryManagement'
+          path: '.'
+          format: 'HTML'
+          out: 'reports'
+
+      - name: Upload Dependency-Check Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-report
+          path: reports
+
+  zap-scan:
+    name: OWASP ZAP (DAST)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Application via Docker Compose
+        run: |
+          docker compose -f InventoryManagement/src/docker-compose.yml up -d --build db keycloak server
+
+      - name: Wait for Keycloak
+        run: |
+          timeout=60
+          while ! curl -s -f http://localhost:8080/realms/inventory-realm > /dev/null; do
+              timeout=$((timeout - 1))
+              if [ "$timeout" -eq 0 ]; then
+                  echo "Keycloak did not become ready in time"
+                  exit 1
+              fi
+              echo "Waiting for Keycloak... ($timeout seconds left)"
+              sleep 2
+          done
+          echo "Keycloak is ready!"
+
+      - name: Wait for API Server
+        run: |
+          timeout=30
+          while ! curl -s -f http://localhost:8090/openapi/v1.json > /dev/null; do
+              timeout=$((timeout - 1))
+              if [ "$timeout" -eq 0 ]; then
+                  echo "API Server did not become ready in time"
+                  exit 1
+              fi
+              echo "Waiting for API Server... ($timeout seconds left)"
+              sleep 2
+          done
+          echo "API Server is ready!"
+          
+      - name: OWASP ZAP API Scan
+        uses: zaproxy/action-api-scan@5158fe4d9d8fcc75ea204db81317cce7f9e5453d # v0.10.0
+        with:
+          target: 'http://localhost:8090/openapi/v1.json'
+          format: 'openapi'
+          allow_issue_writing: false

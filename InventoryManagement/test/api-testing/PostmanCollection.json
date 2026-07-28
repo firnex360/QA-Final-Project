@@ -12,9 +12,9 @@
           "// ──────────────────────────────────────────────────────────",
           "// Collection-level pre-request: auto-authenticate via Keycloak",
           "// ──────────────────────────────────────────────────────────",
-          "const baseUrl  = pm.collectionVariables.get('baseUrl');",
-          "const username = pm.collectionVariables.get('authUsername');",
-          "const password = pm.collectionVariables.get('authPassword');",
+          "const baseUrl  = pm.variables.get('baseUrl');",
+          "const username = pm.variables.get('authUsername');",
+          "const password = pm.variables.get('authPassword');",
           "",
           "const cachedToken = pm.collectionVariables.get('accessToken');",
           "const tokenExpiry = pm.collectionVariables.get('tokenExpiry');",
@@ -166,7 +166,7 @@
               "// 4. Data Logic Validation",
               "pm.test(\"Product ID matches requested ID\", function () {",
               "    var product = pm.response.json();",
-              "    pm.expect(product.id).to.eql(4); // matches the URL ID",
+              "    pm.expect(product.id).to.eql(2); // matches the URL ID",
               "});",
               "",
               "// 5. Performance Threshold",
@@ -182,14 +182,14 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/product/4",
+          "raw": "{{baseUrl}}/api/product/2",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "product",
-            "4"
+            "2"
           ]
         }
       },
@@ -241,7 +241,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Postman Test Product\",\n  \"codeSKU\": \"PM-TEST-999\",\n  \"description\": \"A product created via Postman API tests.\",\n  \"category\": \"Testing\",\n  \"price\": 49.99,\n  \"quantity\": 50,\n  \"minimumStockLevel\": 5,\n  \"isActive\": true\n}"
+          "raw": "{\n  \"name\": \"Postman Test Product\",\n  \"codeSKU\": \"PM-TEST-{{$timestamp}}\",\n  \"description\": \"A product created via Postman API tests.\",\n  \"category\": \"Testing\",\n  \"price\": 49.99,\n  \"quantity\": 50,\n  \"minimumStockLevel\": 5,\n  \"isActive\": true\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/product",
@@ -346,7 +346,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"id\": 4,\n  \"name\": \"Updated Postman Product\",\n  \"codeSKU\": \"PM-TEST-004\",\n  \"description\": \"Updated description via Postman test.\",\n  \"category\": \"Testing\",\n  \"price\": 29.99,\n  \"quantity\": 150,\n  \"minimumStockLevel\": 15,\n  \"isActive\": true\n}"
+          "raw": "{\n  \"id\": 4,\n  \"name\": \"Updated Postman Product\",\n  \"codeSKU\": \"PM-UPD-{{$timestamp}}\",\n  \"description\": \"Updated description via Postman test.\",\n  \"category\": \"Testing\",\n  \"price\": 29.99,\n  \"quantity\": 150,\n  \"minimumStockLevel\": 15,\n  \"isActive\": true\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/product/4",

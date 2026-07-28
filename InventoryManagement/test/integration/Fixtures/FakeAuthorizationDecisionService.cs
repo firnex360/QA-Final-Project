@@ -18,14 +18,13 @@ public sealed class FakeAuthorizationDecisionService : IAuthorizationDecisionSer
         string scope,
         CancellationToken cancellationToken = default) => Task.FromResult(NextDecision);
 
-    /// <summary>Full access by default, mirroring an admin's grants.</summary>
-    public List<UserPermissionDto> GrantedPermissions { get; set; } =
-    [
-        new() { Resource = "Products", Scopes = ["view", "manage", "delete"] },
-        new() { Resource = "ProductStats", Scopes = ["view"] },
-        new() { Resource = "ProductStock", Scopes = ["manage"] },
-        new() { Resource = "Audit", Scopes = ["view"] }
-    ];
+    /// <summary>
+    /// Only used by /api/permissions/me, so we can keep the list of granted permissions
+    /// empty rather than duplicating Keycloak's resource/scope matrix here, where it
+    /// would silently drift from the realm configuration. A test that needs specific
+    /// grants can assign them.
+    /// </summary>
+    public List<UserPermissionDto> GrantedPermissions { get; set; } = [];
 
     public Task<List<UserPermissionDto>> GetGrantedPermissionsAsync(
         string accessToken,
