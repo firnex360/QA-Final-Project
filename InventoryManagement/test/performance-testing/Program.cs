@@ -11,6 +11,8 @@
 //     Throughput         → Auto-reported in the HTML report (RPS & Data).
 // ============================================================================
 
+using System.Net.Http.Json;
+using System.Text.Json;
 using NBomber.CSharp;
 using NBomber.Contracts;
 using NBomber.Http.CSharp;
@@ -20,13 +22,38 @@ using NBomber.Contracts.Stats;
 var httpClient = new HttpClient();
 const string BaseUrl = "http://localhost:8090";
 
+// AUTHENTICATION
+const string TestUsername = "api-test";
+const string TestPassword = "12345";
+
+var tokenResponse = await httpClient.PostAsJsonAsync(
+    $"{BaseUrl}/api/auth/token",
+    new { username = TestUsername, password = TestPassword });
+
+if (!tokenResponse.IsSuccessStatusCode)
+{
+    // Stop immediately rather than producing that making false reports 
+    Console.Error.WriteLine(
+        $"Could not log in as '{TestUsername}' ({(int)tokenResponse.StatusCode}): "
+        + await tokenResponse.Content.ReadAsStringAsync());
+    Console.Error.WriteLine("Check that the API, Keycloak and the 'api-test' user are all available.");
+    return 1;
+}
+
+var accessToken = (await tokenResponse.Content.ReadFromJsonAsync<JsonElement>())
+    .GetProperty("access_token")
+    .GetString();
+
+Console.WriteLine($"Authenticated as '{TestUsername}'. Starting performance tests...\n");
+
 // SCENARIO 1: LOAD TEST — Normal Peak Traffic
 // Purpose: Simulate sustained expected traffic to verify stability.
 // Rubric:  Load Testing, Concurrent Users, Response Time, Throughput
 var loadTestScenario = Scenario.Create("load_test_get_products", async context =>
 {
     var request = Http.CreateRequest("GET", $"{BaseUrl}/api/product")
-                      .WithHeader("Accept", "application/json");
+                      .WithHeader("Accept", "application/json")
+                      .WithHeader("Authorization", $"Bearer {accessToken}");
 
     return await Http.Send(httpClient, request);
 })
@@ -44,7 +71,8 @@ var loadTestScenario = Scenario.Create("load_test_get_products", async context =
 var stressTestScenario = Scenario.Create("stress_test_get_products", async context =>
 {
     var request = Http.CreateRequest("GET", $"{BaseUrl}/api/product")
-                      .WithHeader("Accept", "application/json");
+                      .WithHeader("Accept", "application/json")
+                      .WithHeader("Authorization", $"Bearer {accessToken}");
 
     return await Http.Send(httpClient, request);
 })
@@ -60,7 +88,8 @@ var stressTestScenario = Scenario.Create("stress_test_get_products", async conte
 var randomSpikeScenario = Scenario.Create("random_spike_get_products", async context =>
 {
     var request = Http.CreateRequest("GET", $"{BaseUrl}/api/product")
-                      .WithHeader("Accept", "application/json");
+                      .WithHeader("Accept", "application/json")
+                      .WithHeader("Authorization", $"Bearer {accessToken}");
 
     return await Http.Send(httpClient, request);
 })
@@ -84,3 +113,5 @@ NBomberRunner
     .Run();
 
 Console.WriteLine("\n=== Performance tests complete! Check the /reports folder for the HTML report. ===");
+
+return 0;
