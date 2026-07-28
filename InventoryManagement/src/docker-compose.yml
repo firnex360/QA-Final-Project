@@ -4,15 +4,15 @@ services:
     image: postgres:18.4
     container_name: inventory-db
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: InventoryDb
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-InventoryDb}
     ports:
       - "5454:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d InventoryDb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-InventoryDb}"]
       interval: 5s
       timeout: 5s
       retries: 3
@@ -28,7 +28,7 @@ services:
     container_name: inventory-server
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=InventoryDb;Username=admin;Password=password
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-InventoryDb};Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-password}
       - Keycloak__Authority=http://localhost:8080/realms/inventory-realm
       - Keycloak__MetadataAddress=http://keycloak:8080/realms/inventory-realm/.well-known/openid-configuration
       - OTLP__Endpoint=http://alloy:4317
@@ -77,8 +77,8 @@ services:
       dockerfile: Dockerfile
     container_name: keycloak
     environment:
-      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USER:-admin}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
       # Pin the canonical issuer. Without this, Keycloak derives the issuer from each
       # request's Host header, so a token minted via localhost:8080 (browser login) is
       # rejected when the API presents it via keycloak:8080 (server-to-server UMA calls).
@@ -132,8 +132,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
