@@ -25,4 +25,16 @@ public static class Scopes
     public const string View = "view";
     public const string Manage = "manage";
     public const string Delete = "delete";
+
+    // #5.12-scope-convention
+    // The single definition of the verb → scope rule. Used by the enforcement
+    // middleware (#5.2-policy-middleware) and by the pre-flight check endpoint
+    // (#5.12-permission-check-api), so the UI can never assume a different rule
+    // than the one actually enforced.
+    public static string ForMethod(string? httpMethod) => (httpMethod ?? string.Empty).ToUpperInvariant() switch
+    {
+        "GET" or "HEAD" => View,
+        "DELETE" => Delete,
+        _ => Manage
+    };
 }

@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject HttpClient Http
 @inject AuthenticationStateProvider AuthStateProvider
+@inject PermissionStore Permissions
 
 <PageTitle>Audit Log</PageTitle>
 
@@ -12,7 +13,7 @@
     </div>
 </div>
 
-@if (stats is not null)
+@if (allowed == true && stats is not null)
 {
     <div class="kpi-grid">
         <div class="kpi-card kpi-blue">
@@ -72,7 +73,12 @@
     </div>
 }
 
-@if (logs is null)
+@if (allowed is not true)
+{
+    @* Renders the notice when denied, nothing while the answer is still pending. *@
+    <RouteGuard Path="/api/audit" Action="review the audit trail" />
+}
+else if (logs is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -141,8 +147,20 @@ else
     private IEnumerable<AuditLogDto> PagedLogs =>
         logs is null ? Enumerable.Empty<AuditLogDto>() : logs.Skip((currentPage - 1) * pageSize).Take(pageSize);
 
+    // #5.11-page-guards
+    // This page reads GET /api/audit, so it asks the server whether that call is allowed
+    // rather than naming a resource or scope itself. Null means "still asking".
+    private bool? allowed;
+
     protected override async Task OnInitializedAsync()
     {
+        allowed = await Permissions.CanAsync("/api/audit");
+
+        // Without the permission the API would answer 403 and the empty list would be
+        // rendered as "no audit records yet", which is misleading — so don't ask at all.
+        if (allowed is not true)
+            return;
+
         try
         {
             logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit");
