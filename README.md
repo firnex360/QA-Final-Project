@@ -1,62 +1,48 @@
 # QA-Final-Project
 
-This is a repo for version control of the final project of the class "Quality Assurance"
+This is a repo for version control of the final project of the class "Quality Assurance". This project has as objective learning devops, testing code, metrics, build and deploying using actions, better use of commits and pull request and using better GitHub.
 
+For the project we would be using [.NET Blazor](https://dotnet.microsoft.com/en-us/apps/aspnet/web-apps/blazor) and .NET version: 10.0.300 download [here](https://dotnet.microsoft.com/es-es/download).
 
+## Quick start
 
-For the project we would be using [.NET Blazor](https://dotnet.microsoft.com/en-us/apps/aspnet/web-apps/blazor).
-
-
-
-.NET version: 10.0.300 download [here](https://dotnet.microsoft.com/es-es/download)
-
-
-
-Intro to Blazor: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-tutorial/intro)
-
-How to run app locally once clone the project: [here](https://dotnet.microsoft.com/en-us/learn/aspnet/blazor-tutorial/run) (this is just for Blazor apps)
-
-
-
-# Documentación técnica — Sistema de Gestión de Inventarios
-
-Documentación por requisito del proyecto. Cada documento es un **índice de anclas**: una lista de
-identificadores que existen a la vez aquí y como comentario dentro del código.
-
-## Cómo funciona
-
-Cada apartado tiene un id como `#1.1-create-api`. Ese mismo texto está escrito en el archivo
-fuente correspondiente.
-
-> Copie el id (con el `#`) y péguelo en la búsqueda global del editor (`Ctrl+Shift+F`).
-> Obtendrá dos resultados: la explicación aquí y el código exacto.
-
-En el código las anclas aparecen como `// #1.1-create-api` (C#), `@* #1.1-create-ui *@` (Razor),
-`# #6.5-alert-rules` (YAML) o en el campo `description` (JSON de los tableros de Grafana). Los
-comentarios del código están en **inglés** y resumen los valores concretos (límites, parámetros,
-códigos de estado); estos documentos están en **español** y explican qué hace y por qué.
-
-## Documentos
-
-| Doc | Requisito del proyecto | Anclas |
-|---|---|---|
-| [01 · Gestión de Productos](01-gestion-de-productos.md) | Alcance Funcional §1 — alta, edición, borrado y visualización con paginación, búsqueda, filtros y ordenamiento | `#1.x` |
-| [02 · Control de Stock](02-control-de-stock.md) | Alcance Funcional §2 — entradas/salidas, alertas de stock mínimo, historial de movimientos y auditoría | `#2.x` |
-| [03 · API Empresarial](03-api-empresarial.md) | Alcance Funcional §3 — API REST documentada con OpenAPI y Swagger UI | `#3.x` |
-| [04 · Interfaz y Dashboard](04-interfaz-usuario.md) | Alcance Funcional §4 — tablero de control, indicadores y usabilidad | `#4.x` |
-| [05 · Roles y Seguridad](05-roles-y-seguridad.md) | Modelo granular obligatorio y Seguridad — Keycloak, OAuth2, JWT, scopes y policies | `#5.x` |
-| [06 · Observabilidad y Telemetría](06-observabilidad-telemetria.md) | Observabilidad — OpenTelemetry, Prometheus, Tempo, Loki, Alloy, Grafana y Alertmanager | `#6.x` |
-| [07 · Guía de Pruebas](07-guia-de-pruebas.md) | Full Stack Testing — dónde está cada tipo de prueba, cómo ejecutarla y qué cubre | — |
-
-> El documento 07 es una guía, no un índice de anclas: las pruebas ya están separadas por proyecto
-> y por archivo, así que la unidad útil ahí es el proyecto y no la línea de código.
-
-## Arranque rápido
-
-```bash
 docker compose up --build
-```
 
-Desde `InventoryManagement/src`. Luego entre al cliente en `http://localhost:9090`, inicie sesión
-y navegue un poco para generar telemetría; después revise los tableros en
-`http://localhost:3000`.
+From InventoryManagement/src run `docker compose up --build`. Then access the client at http://localhost:9090, log in,
+and browse around a bit to generate telemetry; then check the dashboards at
+http://localhost:3000.
+
+# Technical documentation — Inventory Management System
+
+Documentation by project requirement. Each document is an **anchor index**: a list of
+identifiers that exist both here and as a comment inside the code.
+
+## How it works
+
+Each section has an id like `#1.1-create-api`. That same text is written in the corresponding
+source file.
+
+> Copy the id (with the `#`) and paste it into the editor's global search (`Ctrl+Shift+F`).
+> You will get two results: the explanation here and the exact code.
+
+In the code, anchors appear as `// #1.1-create-api` (C#), `@* #1.1-create-ui *@` (Razor),
+`# #6.5-alert-rules` (YAML), or in the `description` field (JSON of Grafana dashboards). The
+code comments are in **English** and summarize the concrete values (limits, parameters,
+status codes); these documents are in **Spanish** and explain what it does and why.
+
+## Documents
+
+| Doc | Project requirement | Anchors |
+|---|---|---|
+| [01 · Product Management](01-gestion-de-productos.md) | Functional Scope §1 — creation, editing, deletion, and display with pagination, search, filters, and sorting | `#1.x` |
+| [02 · Stock Control](02-control-de-stock.md) | Functional Scope §2 — inbound/outbound, minimum stock alerts, movement history, and audit | `#2.x` |
+| [03 · Enterprise API](03-api-empresarial.md) | Functional Scope §3 — REST API documented with OpenAPI and Swagger UI | `#3.x` |
+| [04 · Interface and Dashboard](04-interfaz-usuario.md) | Functional Scope §4 — control panel, indicators, and usability | `#4.x` |
+| [05 · Roles and Security](05-roles-y-seguridad.md) | Mandatory granular model and Security — Keycloak, OAuth2, JWT, scopes, and policies | `#5.x` |
+| [06 · Observability and Telemetry](06-observabilidad-telemetria.md) | Observability — OpenTelemetry, Prometheus, Tempo, Loki, Alloy, Grafana, and Alertmanager | `#6.x` |
+| [07 · Testing Guide](07-guia-de-pruebas.md) | Full Stack Testing — where each test type is, how to run it, and what it covers | — |
+
+> Document 07 is a guide, not an anchor index: tests are already separated by project
+> and by file, so the useful unit there is the project and not the line of code.
+
+
